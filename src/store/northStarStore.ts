@@ -1,33 +1,44 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 
-interface Milestone {
+export interface Milestone {
   id: string;
   label: string;
   isCompleted: boolean;
 }
 
 interface NorthStarState {
-  title: string;
-  description: string;
+  objective: {
+    title: string;
+    description: string;
+  };
   milestones: Milestone[];
+  chartData: { name: string; value: number }[];
   isLoading: boolean;
   error: string | null;
-  fetchMilestones: (tenantId: number) => Promise<void>;
-  updateObjective: (tenantId: number, title: string, description: string) => Promise<void>;
+  fetchNorthStar: (tenantId: number) => Promise<void>;
+  updateObjective: (tenantId: number, data: { title: string; description: string; milestones: Milestone[] }) => Promise<void>;
   toggleMilestone: (tenantId: number, milestoneId: string) => Promise<void>;
-  addMilestone: (tenantId: number, label: string) => Promise<void>;
-  removeMilestone: (tenantId: number, milestoneId: string) => Promise<void>;
 }
 
 export const useNorthStarStore = create<NorthStarState>((set, get) => ({
-  title: '',
-  description: '',
+  objective: {
+    title: 'Define your ultimate objective',
+    description: 'The North Star Metric is the single key performance indicator that best captures the core value your product delivers to customers.'
+  },
   milestones: [],
+  chartData: [
+    { name: 'Jan', value: 400 },
+    { name: 'Feb', value: 300 },
+    { name: 'Mar', value: 600 },
+    { name: 'Apr', value: 800 },
+    { name: 'May', value: 500 },
+    { name: 'Jun', value: 900 },
+  ],
   isLoading: false,
   error: null,
 
-  fetchMilestones: async (tenantId: number) => {
+  fetchNorthStar: async (tenantId: number) => {
     set({ isLoading: true });
     try {
       const { data, error } = await supabase
@@ -39,8 +50,10 @@ export const useNorthStarStore = create<NorthStarState>((set, get) => ({
       if (error) throw error;
       
       set({
-        title: data.north_star_title || 'Define your objective',
-        description: data.north_star_description || '',
+        objective: {
+          title: data.north_star_title || 'Define your objective',
+          description: data.north_star_description || '',
+        },
         milestones: data.north_star_milestones ? (typeof data.north_star_milestones === 'string' ? JSON.parse(data.north_star_milestones) : data.north_star_milestones) : [],
         isLoading: false
       });
@@ -49,14 +62,23 @@ export const useNorthStarStore = create<NorthStarState>((set, get) => ({
     }
   },
 
-  updateObjective: async (tenantId: number, title: string, description: string) => {
+  updateObjective: async (tenantId: number, data: { title: string; description: string; milestones: Milestone[] }) => {
     try {
       const { error } = await supabase
         .from('tenants')
-        .update({ north_star_title: title, north_star_description: description })
+        .update({ 
+          north_star_title: data.title, 
+          north_star_description: data.description,
+          north_star_milestones: data.milestones
+        })
         .eq('id', tenantId);
+      
       if (error) throw error;
-      set({ title, description });
+      
+      set({ 
+        objective: { title: data.title, description: data.description },
+        milestones: data.milestones
+      });
     } catch (err) {
       console.error('Failed to update objective:', err);
     }
@@ -77,39 +99,6 @@ export const useNorthStarStore = create<NorthStarState>((set, get) => ({
       set({ milestones: updated });
     } catch (err) {
       console.error('Failed to toggle milestone:', err);
-    }
-  },
-
-  addMilestone: async (tenantId: number, label: string) => {
-    const { milestones } = get();
-    const newMilestone = { id: Math.random().toString(36).substr(2, 9), label, isCompleted: false };
-    const updated = [...milestones, newMilestone];
-    
-    try {
-      const { error } = await supabase
-        .from('tenants')
-        .update({ north_star_milestones: updated })
-        .eq('id', tenantId);
-      if (error) throw error;
-      set({ milestones: updated });
-    } catch (err) {
-      console.error('Failed to add milestone:', err);
-    }
-  },
-
-  removeMilestone: async (tenantId: number, milestoneId: string) => {
-    const { milestones } = get();
-    const updated = milestones.filter(m => m.id !== milestoneId);
-    
-    try {
-      const { error } = await supabase
-        .from('tenants')
-        .update({ north_star_milestones: updated })
-        .eq('id', tenantId);
-      if (error) throw error;
-      set({ milestones: updated });
-    } catch (err) {
-      console.error('Failed to remove milestone:', err);
     }
   }
 }));
