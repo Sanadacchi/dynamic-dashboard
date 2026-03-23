@@ -55,18 +55,29 @@ const INITIAL_DB: DB = {
   eod_reports: []
 };
 
-// Initialize DB from localStorage or defaults
+// In-memory fallback for browsers blocking LocalStorage (e.g. Zen/Firefox in Strict Mode)
+let memoryDB = { ...INITIAL_DB };
+
 const getDB = (): DB => {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (!stored) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_DB));
-    return INITIAL_DB;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_DB));
+      return INITIAL_DB;
+    }
+    return JSON.parse(stored);
+  } catch (e) {
+    console.warn('LocalStorage access blocked (Zen/Firefox Strict Mode?). Falling back to in-memory storage.');
+    return memoryDB;
   }
-  return JSON.parse(stored);
 };
 
 const saveDB = (db: DB) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+  } catch (e) {
+    memoryDB = db;
+  }
 };
 
 export const initMockBackend = () => {
