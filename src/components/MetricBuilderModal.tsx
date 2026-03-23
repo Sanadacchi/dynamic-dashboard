@@ -29,9 +29,10 @@ export const MetricBuilderModal = ({
         .from('custom_widgets')
         .insert([{
           tenant_id: tenantId,
-          user_id: 1, // Default for now
+          user_id: userId,
           label: data.label,
           type: data.type,
+          current_value: 0,
           goal_value: data.goalValue,
           config: data.config
         }])

@@ -19,9 +19,16 @@ export const NotificationCenter = ({ isOpen, onClose }: { isOpen: boolean, onClo
   const { tasks } = useProjectStore();
 
   // Combine and sort activities from all tasks
-  const projectActivities = tasks
-    .flatMap(t => (t.activity || []).map(a => ({ ...a, taskTitle: t.title })))
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+  const projectActivities = (tasks || [])
+    .flatMap(t => {
+      const activities = Array.isArray(t.activity) ? t.activity : [];
+      return activities.map((a: any) => ({ ...a, taskTitle: t.title }));
+    })
+    .sort((a, b) => {
+      const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+      const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+      return timeB - timeA;
+    })
     .slice(0, 5);
 
   useEffect(() => {

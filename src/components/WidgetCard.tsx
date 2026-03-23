@@ -89,9 +89,9 @@ export const WidgetCard = ({ widget }: WidgetCardProps) => {
       <div className="flex items-end justify-between mb-4">
         <div>
           <span className="text-3xl font-bold text-white tabular-nums tracking-tight">
-            {widget.current_value.toLocaleString()}
+            {(widget.current_value || 0).toLocaleString()}
           </span>
-          <span className="text-zinc-500 text-xs font-medium ml-1.5">/ {widget.goal_value?.toLocaleString()}</span>
+          <span className="text-zinc-500 text-xs font-medium ml-1.5">/ {(widget.goal_value || 0).toLocaleString()}</span>
         </div>
         <div className={`px-2 py-1 rounded-lg bg-${accentColor}-500/10 text-${accentColor}-500 text-[10px] font-bold`}>
           {progressPercent}%
