@@ -12,6 +12,7 @@ import { format, isAfter, setHours, setMinutes, startOfToday } from 'date-fns';
 import { useWorkspaceStore } from '../store/workspaceStore';
 import { useNotificationStore } from '../store/notificationStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '../lib/supabase';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
 
 export const WarRoom = () => {
@@ -33,6 +34,7 @@ export const WarRoom = () => {
     enabled: !!tenantId,
   });
 
+  const { taskVelocityData, setTaskVelocityData } = useWorkspaceStore();
   const { data: warRoomData } = useQuery({
     queryKey: ['warRoom', tenantId],
     queryFn: () => tenantId ? fetch(`/api/war-room/${tenantId}?authorId=${currentUser?.id}`).then(res => res.json()) : null,
@@ -57,19 +59,27 @@ export const WarRoom = () => {
   }, [warRoomData?.hasSubmittedEod]);
 
   const addBlocker = useMutation({
-    mutationFn: (args: any) => fetch('/api/blockers', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenantId, authorId: currentUser?.id, ...args })
-    }).then(res => res.json()),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['warRoom'] })
+    mutationFn: async (args: any) => {
+      const { error } = await supabase.from('blockers').insert([{
+        tenant_id: tenantId,
+        author_id: currentUser?.id,
+        task: args.task,
+        blocker_text: args.blocker_text,
+        is_escalated: args.is_escalated
+      }]);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['war-room'] })
   });
 
   const resolveBlocker = useMutation({
-    mutationFn: (id: number) => fetch(`/api/blockers/${id}`, { method: 'DELETE' }).then(res => res.json()),
+    mutationFn: async (id: number) => {
+      const { error } = await supabase.from('blockers').delete().eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       setActiveDropdown(null);
-      queryClient.invalidateQueries({ queryKey: ['warRoom'] });
+      queryClient.invalidateQueries({ queryKey: ['war-room'] });
       addNotification('SUCCESS', 'Blocker explicitly unblocked & purged.');
     }
   });

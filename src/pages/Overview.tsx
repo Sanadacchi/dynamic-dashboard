@@ -13,8 +13,10 @@ import { MetricBuilderModal } from '../components/MetricBuilderModal';
 import { ContextMenu } from '../components/ContextMenu';
 import { EditPanelModal } from '../components/EditPanelModal';
 import { UniversalLineChart } from '../components/UniversalLineChart';
+import { useLayoutStore } from '../store/layoutStore';
+import { supabase } from '../lib/supabase';
 import { useWidgetData } from '../hooks/useWidgetData';
-import { PERSONA_DATA, TREND_ICON, TREND_COLOR } from '../personaConfig';
+import { PERSONA_DATA, PersonaType, TREND_ICON, TREND_COLOR } from '../personaConfig';
 import { lineData } from '../mockData';
 import { WidgetConfig, CustomWidget } from '../types';
 
@@ -38,10 +40,18 @@ export const Overview = () => {
     enabled: !!tenantId,
   });
 
-  const { data: customWidgets } = useQuery({
-    queryKey: ['customWidgets', tenantId],
-    queryFn: () => tenantId ? fetch(`/api/custom-widgets/${tenantId}`).then(res => res.json()) : null,
-    enabled: !!tenantId,
+  const { data: widgets, isLoading: loadingWidgets } = useQuery({
+    queryKey: ['custom-widgets', tenantId],
+    queryFn: async () => {
+      if (!tenantId) return [];
+      const { data, error } = await supabase
+        .from('custom_widgets')
+        .select('*')
+        .eq('tenant_id', tenantId);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!tenantId
   });
 
   const [isMetricBuilderOpen, setIsMetricBuilderOpen] = useState(false);
@@ -57,14 +67,17 @@ export const Overview = () => {
     }
   }, [data]);
 
-  const goalMutation = useMutation({
-    mutationFn: (goalData: { text: string, category: string }) => 
-      fetch('/api/daily-goal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenantId, goalText: goalData.text, category: goalData.category })
-      }).then(res => res.json()),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+  const updateGoal = useMutation({
+    mutationFn: async (goalData: { text: string, category: string }) => {
+      const { error } = await supabase
+        .from('tenants')
+        .update({ north_star_title: goalData.text, north_star_category: goalData.category })
+        .eq('id', tenantId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard', tenantId] });
+    }
   });
 
   if (isLoading) return <div className="p-8">Loading dashboard...</div>;
@@ -109,7 +122,7 @@ export const Overview = () => {
                   type="text"
                   value={goalText}
                   onChange={(e) => setGoalText(e.target.value)}
-                  onBlur={() => goalText && goalMutation.mutate({ text: goalText, category: goalCategory })}
+                  onBlur={() => goalText && updateGoal.mutate({ text: goalText, category: goalCategory })}
                   placeholder="Set the Daily North Star..."
                   className="bg-transparent border-none outline-none text-sm font-medium w-full placeholder:text-zinc-600"
                 />
@@ -117,7 +130,7 @@ export const Overview = () => {
                   value={goalCategory} 
                   onChange={e => {
                     setGoalCategory(e.target.value);
-                    if (goalText) goalMutation.mutate({ text: goalText, category: e.target.value });
+                    if (goalText) updateGoal.mutate({ text: e.target.value, category: data?.tenant?.north_star_category || 'Strategic Target' });
                   }}
                   className="bg-transparent border-none text-xs font-bold text-zinc-500 outline-none cursor-pointer max-w-[100px]"
                 >
@@ -133,7 +146,7 @@ export const Overview = () => {
 
       {/* Stats Grid - Aligned 2x2 for Mobile from Template */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-        {customWidgets?.map((widget: CustomWidget) => (
+        {widgets?.map((widget: CustomWidget) => (
           <WidgetCard key={widget.id} widget={widget} />
         ))}
         <button 

@@ -2,12 +2,17 @@ import React, { useState } from 'react';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { Zap, ChevronRight, Check, Pencil, Search, Users } from 'lucide-react';
 import { PERSONA_DATA, PersonaType } from '../personaConfig';
+import { supabase } from '../lib/supabase';
 
 export const LoginScreen = ({ onLogin }: { onLogin: (tenantId: number, userId: number, name: string) => void }) => {
   const queryClient = useQueryClient();
   const { data: tenants, isLoading: loadingTenants } = useQuery({
     queryKey: ['tenants'],
-    queryFn: () => fetch('/api/tenants').then(res => res.json())
+    queryFn: async () => {
+      const { data, error } = await supabase.from('tenants').select('*');
+      if (error) throw error;
+      return data;
+    }
   });
 
   const [selectedTenantId, setSelectedTenantId] = useState<number | null>(null);
@@ -18,19 +23,24 @@ export const LoginScreen = ({ onLogin }: { onLogin: (tenantId: number, userId: n
   const [foundGroup, setFoundGroup] = useState<any | null>(null);
   const [inviteError, setInviteError] = useState<string | null>(null);
 
-  // NOTE: The database 'Tenants' or 'Groups' table needs a 'workspace_invite_code' column (unique, alphanumeric) to support this feature.
   const verifyInviteCode = async (code: string) => {
     setIsVerifying(true);
     setInviteError(null);
     setFoundGroup(null);
 
-    // Mock verification logic: accept any existing group'S FULL EXACT NAME as the code
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
     // Find tenant by exact name match (case-insensitive for better UX, but requiring the full string)
-    const matchedTenant = tenants?.find((t: any) => 
-      t.name.toLowerCase() === code.trim().toLowerCase()
-    );
+    const { data: matchedTenants, error } = await supabase
+      .from('tenants')
+      .select('*')
+      .ilike('name', code.trim());
+
+    if (error) {
+      setInviteError("Error verifying invite code.");
+      setIsVerifying(false);
+      return;
+    }
+
+    const matchedTenant = matchedTenants?.[0];
 
     if (matchedTenant) {
       setFoundGroup(matchedTenant);
@@ -42,7 +52,16 @@ export const LoginScreen = ({ onLogin }: { onLogin: (tenantId: number, userId: n
   
   const { data: dashboardData, isLoading: loadingDashboard } = useQuery({
     queryKey: ['dashboard', selectedTenantId],
-    queryFn: () => fetch(`/api/dashboard/${selectedTenantId}`).then(res => res.json()),
+    queryFn: async () => {
+      if (!selectedTenantId) return null;
+      const [tenantRes, usersRes] = await Promise.all([
+        supabase.from('tenants').select('*').eq('id', selectedTenantId).single(),
+        supabase.from('users').select('*').eq('tenant_id', selectedTenantId)
+      ]);
+      if (tenantRes.error) throw tenantRes.error;
+      if (usersRes.error) throw usersRes.error;
+      return { tenant: tenantRes.data, users: usersRes.data };
+    },
     enabled: !!selectedTenantId
   });
 
@@ -55,37 +74,61 @@ export const LoginScreen = ({ onLogin }: { onLogin: (tenantId: number, userId: n
   const [tracker2, setTracker2] = useState(defaultChips.chip_2);
 
   const createTenant = useMutation({
-    mutationFn: (data: { name: string, companyType: string, primaryColor: string, customLabels: any }) => fetch('/api/tenants', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: data.name, dailyBurn: 0, totalBalance: 0, companyType: data.companyType, primaryColor: data.primaryColor, customLabels: data.customLabels })
-    }).then(res => res.json()),
+    mutationFn: async (data: { name: string, companyType: string, primaryColor: string, customLabels: any }) => {
+      const { data: newTenant, error } = await supabase
+        .from('tenants')
+        .insert([{
+          name: data.name,
+          company_type: data.companyType,
+          primary_color: data.primaryColor,
+          custom_labels: data.customLabels,
+          persona: data.companyType
+        }])
+        .select()
+        .single();
+      if (error) throw error;
+      return newTenant;
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
-      setSelectedTenantId(data.id);
+      setSelectedTenantId(Number(data.id));
     }
   });
 
   const [newUserName, setNewUserName] = useState("");
   const [newUserRole, setNewUserRole] = useState("Contributor");
   const createUser = useMutation({
-    mutationFn: (name: string) => fetch('/api/users', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenantId: selectedTenantId, name, role: newUserRole || 'Contributor' })
-    }).then(res => res.json()),
+    mutationFn: async (name: string) => {
+      const { data: newUser, error } = await supabase
+        .from('users')
+        .insert([{
+          tenant_id: selectedTenantId,
+          name,
+          role: newUserRole || 'Contributor',
+          status: 'Offline'
+        }])
+        .select()
+        .single();
+      if (error) throw error;
+      return newUser;
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['dashboard', selectedTenantId] });
-      onLogin(selectedTenantId!, data.id, data.name);
+      onLogin(selectedTenantId!, Number(data.id), data.name);
     }
   });
 
   const [editingRoleUserId, setEditingRoleUserId] = useState<number | null>(null);
   const [editingRoleValue, setEditingRoleValue] = useState("");
   const updateRole = useMutation({
-    mutationFn: ({ id, role }: { id: number; role: string }) =>
-      fetch(`/api/users/${id}/role`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role })
-      }).then(res => res.json()),
+    mutationFn: async ({ id, role }: { id: number; role: string }) => {
+      const { error } = await supabase
+        .from('users')
+        .update({ role })
+        .eq('id', id);
+      if (error) throw error;
+      return { id, role };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard', selectedTenantId] });
       setEditingRoleUserId(null);

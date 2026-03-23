@@ -6,6 +6,7 @@ import { TopNavbar } from '../components/TopNavbar';
 import { RightSidebar } from '../components/RightSidebar';
 import { NotificationCenter } from '../components/NotificationCenter';
 import { useWorkspaceStore } from '../store/workspaceStore';
+import { supabase } from '../lib/supabase';
 import { useLayoutStore } from '../store/layoutStore';
 import { useQuery } from '@tanstack/react-query';
 
@@ -31,9 +32,29 @@ export const DashboardLayout = () => {
     }
   }, [urlTenantId, setTenantId]);
 
-  const { data } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['dashboard', tenantId],
-    queryFn: () => tenantId ? fetch(`/api/dashboard/${tenantId}`).then(res => res.json()) : null,
+    queryFn: async () => {
+      if (!tenantId) return null;
+      const [tenantRes, usersRes, docsRes, postsRes] = await Promise.all([
+        supabase.from('tenants').select('*').eq('id', tenantId).single(),
+        supabase.from('users').select('*').eq('tenant_id', tenantId),
+        supabase.from('documents').select('*, users(name)').eq('tenant_id', tenantId).order('created_at', { ascending: false }),
+        supabase.from('social_posts').select('*, users(name, role)').eq('tenant_id', tenantId).order('created_at', { ascending: false })
+      ]);
+
+      if (tenantRes.error) throw tenantRes.error;
+      
+      return {
+        tenant: {
+          ...tenantRes.data,
+          custom_labels: tenantRes.data.custom_labels ? (typeof tenantRes.data.custom_labels === 'string' ? JSON.parse(tenantRes.data.custom_labels) : tenantRes.data.custom_labels) : {}
+        },
+        users: usersRes.data || [],
+        documents: docsRes.data || [],
+        socialPosts: postsRes.data || []
+      };
+    },
     enabled: !!tenantId,
   });
 

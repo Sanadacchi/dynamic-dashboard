@@ -1,3 +1,6 @@
+import { useLayoutStore } from '../store/layoutStore';
+import { supabase } from '../lib/supabase';
+import { PERSONA_DATA, PersonaType } from '../personaConfig';
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Plus, BarChart3, Activity, Target } from 'lucide-react';
@@ -21,13 +24,24 @@ export const MetricBuilderModal = ({
   const [color, setColor] = useState("blue");
 
   const createWidget = useMutation({
-    mutationFn: (data: any) => fetch('/api/custom-widgets', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    }).then(res => res.json()),
+    mutationFn: async (data: any) => {
+      const { data: newWidget, error } = await supabase
+        .from('custom_widgets')
+        .insert([{
+          tenant_id: tenantId,
+          user_id: 1, // Default for now
+          label: data.label,
+          type: data.type,
+          goal_value: data.goalValue,
+          config: data.config
+        }])
+        .select()
+        .single();
+      if (error) throw error;
+      return newWidget;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customWidgets', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['custom-widgets', tenantId] });
       onClose();
       // Reset form
       setLabel("");
