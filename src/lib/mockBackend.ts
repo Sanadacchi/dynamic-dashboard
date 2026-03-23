@@ -91,6 +91,9 @@ export const initMockBackend = () => {
       return originalFetch(input, init);
     }
 
+    // Simulate network delay for a better UI state lifecycle
+    await new Promise(resolve => setTimeout(resolve, 600));
+
     const url = new URL(rawUrl, window.location.origin);
     const path = url.pathname;
     const method = init?.method?.toUpperCase() || 'GET';
@@ -124,8 +127,19 @@ export const initMockBackend = () => {
             ])
           };
           db.tenants.push(newTenant);
+
+          // Auto-create an Admin user for the new tenant
+          const newUserId = db.users.length > 0 ? Math.max(...db.users.map(u => u.id)) + 1 : 1;
+          db.users.push({
+            id: newUserId,
+            tenant_id: newId,
+            name: 'Admin',
+            role: 'Owner',
+            status: 'Offline'
+          });
+
           saveDB(db);
-          console.log('Created new tenant:', newTenant);
+          console.log('Created new tenant and Admin user:', newId);
           console.groupEnd();
           return new Response(JSON.stringify(newTenant), { status: 200, headers });
         }

@@ -55,10 +55,13 @@ export const LoginScreen = ({ onLogin }: { onLogin: (tenantId: number, userId: n
   const [tracker2, setTracker2] = useState(defaultChips.chip_2);
 
   const createTenant = useMutation({
-    mutationFn: (data: { name: string, companyType: string, primaryColor: string, customLabels: any }) => fetch('/api/tenants', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: data.name, dailyBurn: 0, totalBalance: 0, companyType: data.companyType, primaryColor: data.primaryColor, customLabels: data.customLabels })
-    }).then(res => res.json()),
+    mutationFn: (data: { name: string, companyType: string, primaryColor: string, customLabels: any }) => {
+      console.log('Creating tenant via mutation...', data);
+      return fetch('/api/tenants', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: data.name, dailyBurn: 0, totalBalance: 0, companyType: data.companyType, primaryColor: data.primaryColor, customLabels: data.customLabels })
+      }).then(res => res.json());
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
       setSelectedTenantId(data.id);
