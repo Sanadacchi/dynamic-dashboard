@@ -143,7 +143,9 @@ export const Social = () => {
                 </div>
                 <div>
                   <p className="font-bold text-white text-sm">{post.author_name}</p>
-                  <p className="text-[10px] text-zinc-500">{post.author_role} • {formatDistanceToNow(new Date(post.created_at.replace(' ', 'T') + 'Z'))} ago</p>
+                  <p className="text-[10px] text-zinc-500">
+                    {post.author_role} • {post.created_at ? formatDistanceToNow(new Date(post.created_at)) : 'just now'} ago
+                  </p>
                 </div>
               </div>
               {post.author_id === currentUser?.id && (
