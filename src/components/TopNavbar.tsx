@@ -50,6 +50,20 @@ export const TopNavbar = ({ onOpenNotificationCenter }: { onOpenNotificationCent
             <NavLink to={`/space/${tenantId}/social`} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-4 text-lg font-medium text-zinc-400 hover:text-white transition-colors bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800">
               <MessageSquare className="text-pink-500" /> Social
             </NavLink>
+
+            {/* Theme Toggle for Mobile */}
+            <button 
+              onClick={() => { setTheme(theme === 'dark' ? 'light' : 'dark'); setMobileMenuOpen(false); }}
+              className="flex items-center justify-between w-full mt-4 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-white/5"
+            >
+              <div className="flex items-center gap-4 text-lg font-medium text-zinc-900 dark:text-zinc-400">
+                {theme === 'dark' ? <Moon className="text-amber-400" /> : <Sun className="text-amber-500" />}
+                <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+              </div>
+              <div className={`w-12 h-6 rounded-full p-1 transition-colors ${theme === 'dark' ? 'bg-indigo-600' : 'bg-zinc-300'}`}>
+                <div className={`w-4 h-4 bg-white rounded-full transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-0'}`} />
+              </div>
+            </button>
           </div>
         </div>
       )}

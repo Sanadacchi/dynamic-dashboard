@@ -1,0 +1,38 @@
+# Grahamly Dashboard - Digital Handover Log
+
+## 🎯 Project State
+The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase Cloud Backend**. All core features are synchronized, persistent, and verified with a production build.
+
+## 🏗 Technical Architecture
+
+### 1. Data Layer: Supabase
+- **Real-time Sync**: Uses `@supabase/supabase-js` and React Query (`@tanstack/react-query`) for optimistic updates and automatic invalidation.
+- **Tables**:
+  - `tenants`: Framework settings (North Star, milestones, colors).
+  - `users`: Presence and profile data.
+  - `tasks` & `projects`: Kanban logic.
+  - `custom_widgets`: User-defined dashboard metrics.
+  - `eod_reports`: Daily accountability logs.
+- **Initialization**: See `setup_supabase.sql` for the full schema.
+
+### 2. State Management: Zustand
+- `workspaceStore.ts`: Tracks `tenantId`, `currentTenant`, and global stats.
+- `layoutStore.ts`: Controls sidebars, theme (Dark/Light), and mobile navigation state.
+- `northStarStore.ts`: Manages the strategic goal framework.
+
+### 3. UI/UX
+- **Responsive Design**: Mobile-safe layout with a dedicated iOS-style bottom nav and a hidden sidebar.
+- **Theme Engine**: Persists 'dark' or 'light' mode to the `<html>` element and LocalStorage.
+
+## 🚀 Recent Accomplishments
+- **Total Synchronization**: Connected every dashboard card, persona panel, and War Room feed to live Supabase data.
+- **EOD & North Star Fixes**: Resolved critical schema mismatches (missing `date` and `north_star_chart_data` columns) via SQL migration.
+- **Mobile Polish**: Added the theme toggle to the mobile menu for full accessibility.
+
+## 🔮 Future Roadmap (Next Steps)
+- **RLS Enablement**: Enable Supabase Row Level Security once user authentication (Auth) is fully integrated.
+- **Task Analytics**: The `completed_at` column in `tasks` is ready for advanced velocity chart implementation.
+- **Collaboration**: Real-time presence and typing indicators in the War Room.
+
+---
+*Created by Antigravity AI on 2026-03-23. The project is production-ready and cloud-synchronized.*
