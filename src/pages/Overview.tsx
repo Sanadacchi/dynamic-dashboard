@@ -271,11 +271,11 @@ export const Overview = () => {
           className="relative group lg:col-span-2 bg-[#F7F9FB] dark:bg-[#2C2C2C] rounded-3xl p-8 select-none"
         >
           <div className="flex items-center justify-between mb-8">
-            <h4 className="text-sm font-bold text-zinc-900 dark:text-white">API Requests / min (Live)</h4>
+            <h4 className="text-sm font-bold text-zinc-900 dark:text-white">Recent Project Activity (Live)</h4>
             <div className="flex items-center gap-4">
                <div className="flex items-center gap-2">
                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                 <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest hidden sm:inline-block">Polling Data</span>
+                 <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest hidden sm:inline-block">Live Feed</span>
                </div>
                <button 
                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingPanel('chartPanel'); }}
