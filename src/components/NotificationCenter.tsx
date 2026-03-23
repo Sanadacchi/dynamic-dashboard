@@ -77,7 +77,7 @@ export const NotificationCenter = ({ isOpen, onClose }: { isOpen: boolean, onClo
               ) : (
                 <div className="divide-y divide-zinc-800/50">
                   {notifications.map((notification) => {
-                    const style = NOTIFICATION_ICONS[notification.type];
+                    const style = NOTIFICATION_ICONS[notification.type] || NOTIFICATION_ICONS.INFO;
                     const Icon = style.icon;
                     return (
                       <div 
@@ -95,7 +95,7 @@ export const NotificationCenter = ({ isOpen, onClose }: { isOpen: boolean, onClo
                                 {notification.message}
                               </p>
                               <span className="text-[10px] text-zinc-600 whitespace-nowrap pt-0.5">
-                                {format(new Date(notification.timestamp), 'MMM d, HH:mm')}
+                                {notification.timestamp ? format(new Date(notification.timestamp), 'MMM d, HH:mm') : 'Just now'}
                               </span>
                             </div>
                             <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-2">

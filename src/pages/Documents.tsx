@@ -223,7 +223,9 @@ export const Documents = () => {
                   </div>
                 </td>
                 <td className="px-6 py-4 text-xs text-zinc-400">{file.uploader_name}</td>
-                <td className="px-6 py-4 text-xs text-zinc-400">{format(new Date(file.created_at.replace(' ', 'T') + 'Z'), 'MMM d, yyyy')}</td>
+                <td className="px-6 py-4 text-xs text-zinc-400">
+                  {file.created_at ? format(new Date(file.created_at), 'MMM d, yyyy') : 'Recently'}
+                </td>
                 <td className="px-6 py-4 text-xs text-zinc-400">{(file.size / 1024 / 1024).toFixed(2)} MB</td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

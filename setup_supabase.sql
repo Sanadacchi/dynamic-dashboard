@@ -116,6 +116,23 @@ CREATE TABLE IF NOT EXISTS public.eod_reports (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 3. Disable RLS for all tables (for development simplicity)
+ALTER TABLE public.tenants DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.projects DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tasks DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.documents DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.daily_goals DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.custom_widgets DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.social_posts DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.blockers DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.eod_reports DISABLE ROW LEVEL SECURITY;
+
+-- 4. Enable Storage Policies for the 'documents' bucket
+-- Note: Make sure the 'documents' bucket exists first!
+-- These allow anyone to upload/download/delete for development.
+CREATE POLICY "Public Access" ON storage.objects FOR ALL USING ( bucket_id = 'documents' ) WITH CHECK ( bucket_id = 'documents' );
+
 -- Enable Realtime for these tables
 -- Run these one by one in the Supabase SQL Editor
 -- ALTER PUBLICATION supabase_realtime ADD TABLE public.projects;
