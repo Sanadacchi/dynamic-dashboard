@@ -188,12 +188,81 @@ export const initMockBackend = () => {
           tenant: tenant ? { ...tenant, custom_labels: tenant.custom_labels ? JSON.parse(tenant.custom_labels) : {} } : null,
           users: users.map(u => ({ ...u, tasks: [], achievement: null })),
           dailyGoal: null,
-          documents: [],
-          socialPosts: []
+          documents: db.documents.filter(d => d.tenant_id === tenantId),
+          socialPosts: db.social_posts
+            .filter(p => p.tenant_id === tenantId)
+            .map(p => ({ ...p, author_name: db.users.find(u => u.id === p.author_id)?.name || 'Unknown' }))
         };
         console.log('Returning dashboard data for tenant:', tenantId);
         console.groupEnd();
         return new Response(JSON.stringify(data), { status: 200, headers });
+      }
+
+      // --- Handle social posts ---
+      if (path === '/api/social' && method === 'POST') {
+        const bodyValue = typeof body === 'string' ? JSON.parse(body) : body;
+        const newPost = {
+          id: db.social_posts.length + 1,
+          tenant_id: bodyValue.tenantId,
+          author_id: bodyValue.authorId,
+          content: bodyValue.content,
+          likes: 0,
+          created_at: new Date().toISOString()
+        };
+        db.social_posts.push(newPost);
+        saveDB(db);
+        console.log('Created social post:', newPost);
+        console.groupEnd();
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+      }
+
+      const likeMatch = path.match(/\/api\/social\/(\d+)\/like/);
+      if (likeMatch && method === 'POST') {
+        const postId = parseInt(likeMatch[1]);
+        const post = db.social_posts.find(p => p.id === postId);
+        if (post) post.likes += 1;
+        saveDB(db);
+        console.groupEnd();
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+      }
+
+      // --- Handle EOD reports ---
+      if (path === '/api/eod' && method === 'POST') {
+        const bodyValue = typeof body === 'string' ? JSON.parse(body) : body;
+        const newReport = {
+          id: db.eod_reports.length + 1,
+          tenant_id: bodyValue.tenantId,
+          author_id: bodyValue.authorId,
+          report_text: bodyValue.report_text,
+          date: new Date().toISOString().split('T')[0]
+        };
+        db.eod_reports.push(newReport);
+        saveDB(db);
+        console.log('Created EOD report:', newReport);
+        console.groupEnd();
+        return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+      }
+
+      // --- Handle Documents (Simulated Upload) ---
+      const docMatch = path.match(/\/api\/documents\/(\d+)/);
+      if (docMatch && method === 'POST') {
+        const tenantId = parseInt(docMatch[1]);
+        // For documents, the request is multipart/form-data. 
+        // We can't easily parse multipart in our simple mock, but we can assume success.
+        const newDoc = {
+          id: db.documents.length + 1,
+          tenant_id: tenantId,
+          name: 'Uploaded_File_' + (db.documents.length + 1),
+          type: 'PDF',
+          url: '#', // In production, this would be a real URL
+          size: 1024 * 1024,
+          created_at: new Date().toISOString()
+        };
+        db.documents.push(newDoc);
+        saveDB(db);
+        console.log('Simulated document upload:', newDoc);
+        console.groupEnd();
+        return new Response(JSON.stringify({ success: true, url: '#' }), { status: 200, headers });
       }
 
       // --- Handle users ---
