@@ -167,6 +167,12 @@ export const ProjectBoard = () => {
   const project = projects.find(p => p.id === projectId);
   const projectTasks = tasks.filter(t => t.projectId === projectId);
 
+  React.useEffect(() => {
+    if (currentTenantId) {
+      useProjectStore.getState().fetchData(currentTenantId);
+    }
+  }, [currentTenantId]);
+
   const [addTaskColumn, setAddTaskColumn] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -256,6 +262,7 @@ export const ProjectBoard = () => {
           users={users}
           onSave={(taskData) => addTask({
             ...taskData,
+            tenantId: currentTenantId!,
             projectId: projectId!,
             status: addTaskColumn as TaskStatus,
           })}

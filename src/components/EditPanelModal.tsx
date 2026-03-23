@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useWorkspaceStore } from '../store/workspaceStore';
 import { X, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 type TrendType = 'up' | 'down' | 'neutral';
 
@@ -67,12 +68,27 @@ export const EditPanelModal = ({
       if (panelType === 'sidePanel')    payload.sidePanel    = { title, items };
       if (panelType === 'chartPanel')   payload.chartPanel   = { title: chartLabel };
       if (panelType === 'statusPanel')  payload.statusPanel  = { title, stats };
-      const res = await fetch(`/api/tenants/${tenantId}/overrides`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      return res.json();
+
+      const { data: tenantData, error: fetchError } = await supabase
+        .from('tenants')
+        .select('custom_labels')
+        .eq('id', tenantId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+
+      const existing = (tenantData as any)?.custom_labels ? 
+        (typeof tenantData.custom_labels === 'string' ? JSON.parse(tenantData.custom_labels) : tenantData.custom_labels) : {};
+        
+      const merged = { ...existing, ...payload };
+
+      const { error: updateError } = await supabase
+        .from('tenants')
+        .update({ custom_labels: merged })
+        .eq('id', tenantId);
+      
+      if (updateError) throw updateError;
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard', tenantId] });

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Plus, BarChart3, Activity, Target } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export const MetricBuilderModal = ({ 
   isOpen, 
@@ -21,11 +22,20 @@ export const MetricBuilderModal = ({
   const [color, setColor] = useState("blue");
 
   const createWidget = useMutation({
-    mutationFn: (data: any) => fetch('/api/custom-widgets', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    }).then(res => res.json()),
+    mutationFn: async (data: any) => {
+      const { error } = await supabase
+        .from('custom_widgets')
+        .insert([{
+          tenant_id: data.tenantId,
+          user_id: data.userId,
+          label: data.label,
+          type: data.type,
+          goal_value: data.goalValue,
+          config: data.config
+        }]);
+      if (error) throw error;
+      return { success: true };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customWidgets', tenantId] });
       onClose();

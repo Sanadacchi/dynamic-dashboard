@@ -16,57 +16,116 @@ import {
 import { useNotificationStore } from '../store/notificationStore';
 import { useWorkspaceStore } from '../store/workspaceStore';
 import { format } from 'date-fns';
+import { supabase } from '../lib/supabase';
 
 interface FileItem {
   id: string;
   name: string;
   type: string;
-  uploadedBy: string;
-  date: Date;
-  size: string;
+  uploaded_by: number;
+  uploader_name: string;
+  created_at: string;
+  size: number;
+  url: string;
   progress?: number;
 }
 
 export const Documents = () => {
   const { currentTenantId, currentUser } = useWorkspaceStore();
   const queryClient = useQueryClient();
-  const { data } = useQuery<any>({ queryKey: ['dashboard', currentTenantId?.toString()] });
-  const files = data?.documents || [];
+  
+  const { data: files = [], isLoading } = useQuery<FileItem[]>({ 
+    queryKey: ['documents', currentTenantId],
+    queryFn: async () => {
+      if (!currentTenantId) return [];
+      const { data, error } = await supabase
+        .from('documents')
+        .select('*, users(name)')
+        .eq('tenant_id', currentTenantId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data.map(d => ({
+        ...d,
+        uploader_name: (d as any).users?.name || 'Unknown'
+      }));
+    },
+    enabled: !!currentTenantId
+  });
   
   const { addNotification } = useNotificationStore();
 
   const deleteDocument = useMutation({
-    mutationFn: (documentId: number) => fetch(`/api/documents/${documentId}?authorId=${currentUser?.id}`, { method: 'DELETE' }).then(res => res.json()),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+    mutationFn: async (file: FileItem) => {
+      // 1. Delete from database
+      const { error: dbError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', file.id);
+      
+      if (dbError) throw dbError;
+
+      // 2. Delete from storage
+      const storagePath = file.url.split('/').pop();
+      if (storagePath) {
+        const { error: storageError } = await supabase.storage
+          .from('documents')
+          .remove([storagePath]);
+        if (storageError) console.error('Failed to delete physical file', storageError);
+      }
+    },
+    onSuccess: () => {
+      addNotification('SUCCESS', 'Document deleted successfully.');
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+    }
   });
 
   const handleFileUpload = async (file: File) => {
     if (!currentTenantId || !currentUser) return;
-    console.log(`[Storage] Uploading ${file.name} to local Multer block...`);
     
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('userId', currentUser.id.toString());
-
     try {
-      const res = await fetch(`/api/documents/${currentTenantId}`, {
-        method: 'POST',
-        body: formData
-      });
+      addNotification('INFO', `Uploading ${file.name}...`);
       
-      const result = await res.json();
-      if (result.success) {
-        addNotification('SUCCESS', 'Document stored securely on the local filesystem.');
-        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      }
-    } catch (err) {
+      // 1. Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      const filePath = `${currentTenantId}/${fileName}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('documents')
+        .getPublicUrl(filePath);
+
+      // 2. Insert into documents table
+      const { error: dbError } = await supabase
+        .from('documents')
+        .insert({
+          tenant_id: currentTenantId,
+          uploaded_by: currentUser.id,
+          name: file.name,
+          type: fileExt || 'file',
+          url: publicUrl,
+          size: file.size
+        });
+
+      if (dbError) throw dbError;
+
+      addNotification('SUCCESS', 'Document stored securely in the cloud.');
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+    } catch (err: any) {
       console.error('Upload failed', err);
+      addNotification('ERROR', `Upload failed: ${err.message}`);
     }
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     acceptedFiles.forEach((file) => handleFileUpload(file));
-  }, [handleFileUpload]);
+  }, [currentTenantId, currentUser]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
@@ -173,7 +232,7 @@ export const Documents = () => {
                     </a>
                     {file.uploaded_by == currentUser?.id && (
                       <button 
-                        onClick={() => { if(window.confirm('Delete this document?')) deleteDocument.mutate(file.id); }}
+                        onClick={() => { if(window.confirm('Delete this document?')) deleteDocument.mutate(file); }}
                         className="p-2 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-rose-500 transition-colors"
                       >
                         <Trash2 size={16} />

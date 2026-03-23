@@ -40,6 +40,12 @@ export const Projects = () => {
 
   const tenantProjects = projects.filter(p => p.tenantId === currentTenantId);
 
+  React.useEffect(() => {
+    if (currentTenantId) {
+      useProjectStore.getState().fetchData(currentTenantId);
+    }
+  }, [currentTenantId]);
+
   return (
     <div className="p-6 md:p-8 space-y-8">
       {/* Header */}
