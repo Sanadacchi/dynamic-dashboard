@@ -95,7 +95,29 @@ export const initMockBackend = () => {
   const originalFetch = window.fetch;
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const rawUrl = typeof input === 'string' ? input : (input instanceof URL ? input.href : input.url);
+    let rawUrl: string;
+    let method: string;
+    let body: any = init?.body;
+
+    if (typeof input === 'string') {
+      rawUrl = input;
+      method = init?.method?.toUpperCase() || 'GET';
+    } else if (input instanceof URL) {
+      rawUrl = input.href;
+      method = init?.method?.toUpperCase() || 'GET';
+    } else {
+      // Must be a Request object
+      rawUrl = (input as Request).url;
+      method = init?.method?.toUpperCase() || (input as Request).method.toUpperCase();
+      if (!body && method !== 'GET' && method !== 'HEAD') {
+        try {
+          // Clone the request because we can only read the body once
+          body = await (input as Request).clone().text();
+        } catch (e) {
+          console.warn('Failed to clone request body:', e);
+        }
+      }
+    }
     
     // Only intercept routes that contain /api/
     if (!rawUrl.includes('/api/')) {
@@ -107,11 +129,11 @@ export const initMockBackend = () => {
 
     const url = new URL(rawUrl, window.location.origin);
     const path = url.pathname;
-    const method = init?.method?.toUpperCase() || 'GET';
     const db = getDB();
     const headers = { 'Content-Type': 'application/json' };
 
     console.group(`📡 Mock API: ${method} ${path}`);
+    if (body) console.log('Payload:', body);
 
     try {
       // --- Handle tenants ---
@@ -122,16 +144,16 @@ export const initMockBackend = () => {
           return new Response(JSON.stringify(db.tenants), { status: 200, headers });
         }
         if (method === 'POST') {
-          const body = JSON.parse(init?.body as string);
+          const parsedBody = typeof body === 'string' ? JSON.parse(body) : body;
           const newId = db.tenants.length > 0 ? Math.max(...db.tenants.map(t => t.id)) + 1 : 1;
           const newTenant = {
             id: newId,
-            name: body.name,
-            daily_burn: body.dailyBurn || 0,
-            total_balance: body.totalBalance || 0,
-            company_type: body.companyType,
-            primary_color: body.primaryColor,
-            custom_labels: body.customLabels ? JSON.stringify(body.customLabels) : null,
+            name: parsedBody.name,
+            daily_burn: parsedBody.dailyBurn || 0,
+            total_balance: parsedBody.totalBalance || 0,
+            company_type: parsedBody.companyType,
+            primary_color: parsedBody.primaryColor,
+            custom_labels: parsedBody.customLabels ? JSON.stringify(parsedBody.customLabels) : null,
             dashboard_layout: JSON.stringify([
               { id: 'w1', type: 'STAT_CARD', label: 'Runway Days', metricDataKey: 'runway', color: 'bg-blue-500', rolesRequired: ['OWNER', 'MANAGER'] },
               { id: 'w2', type: 'NORTH_STAR', label: 'North Star', rolesRequired: ['OWNER', 'MANAGER', 'CONTRIBUTOR'] }
