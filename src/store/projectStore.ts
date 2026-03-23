@@ -77,11 +77,27 @@ export const useProjectStore = create<ProjectState>()(
           if (tasksRes.error) throw tasksRes.error;
 
           set({ 
-            projects: projectsRes.data as Project[], 
+            projects: (projectsRes.data || []).map(p => ({
+              id: p.id,
+              tenantId: p.tenant_id,
+              title: p.title,
+              description: p.description,
+              color: p.color,
+              createdAt: p.created_at || p.createdAt
+            })) as Project[], 
             tasks: (tasksRes.data || []).map(t => ({
-              ...t,
+              id: t.id,
+              projectId: t.project_id,
+              tenantId: t.tenant_id,
+              title: t.title,
+              description: t.description,
+              status: t.status,
+              priority: t.priority,
+              assigneeId: t.assignee_id,
+              assigneeName: t.assignee_name,
               comments: typeof t.comments === 'string' ? JSON.parse(t.comments) : (t.comments || []),
-              activity: typeof t.activity === 'string' ? JSON.parse(t.activity) : (t.activity || [])
+              activity: typeof t.activity === 'string' ? JSON.parse(t.activity) : (t.activity || []),
+              createdAt: t.created_at || t.createdAt
             })) as Task[],
             isLoading: false 
           });
@@ -109,7 +125,14 @@ export const useProjectStore = create<ProjectState>()(
           return null;
         }
 
-        const newProject = data as Project;
+        const newProject = {
+          id: data.id,
+          tenantId: data.tenant_id,
+          title: data.title,
+          description: data.description,
+          color: data.color,
+          createdAt: data.created_at || data.createdAt
+        } as Project;
         set((state) => ({ projects: [...state.projects, newProject] }));
         return newProject.id;
       },
@@ -140,9 +163,18 @@ export const useProjectStore = create<ProjectState>()(
         }
 
         const newTask = {
-          ...data,
+          id: data.id,
+          projectId: data.project_id,
+          tenantId: data.tenant_id,
+          title: data.title,
+          description: data.description,
+          status: data.status,
+          priority: data.priority,
+          assigneeId: data.assignee_id,
+          assigneeName: data.assignee_name,
           comments: [],
-          activity: activity
+          activity: activity,
+          createdAt: data.created_at || data.createdAt
         } as Task;
         set((state) => ({ tasks: [...state.tasks, newTask] }));
       },

@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
-import { X, Bell, AlertTriangle, AlertCircle, CheckCircle2, FileText } from 'lucide-react';
+import { X, Bell, AlertTriangle, AlertCircle, CheckCircle2, FileText, MessageSquare, Plus, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotificationStore, NotificationType } from '../store/notificationStore';
-import { format } from 'date-fns';
+import { useProjectStore } from '../store/projectStore';
+import { format, formatDistanceToNow } from 'date-fns';
 
 const NOTIFICATION_ICONS: Record<NotificationType, any> = {
   SUCCESS: { icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
@@ -15,6 +16,13 @@ const NOTIFICATION_ICONS: Record<NotificationType, any> = {
 
 export const NotificationCenter = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
   const { notifications, markAsRead, clearAll, pruneOldNotifications } = useNotificationStore();
+  const { tasks } = useProjectStore();
+
+  // Combine and sort activities from all tasks
+  const projectActivities = tasks
+    .flatMap(t => (t.activity || []).map(a => ({ ...a, taskTitle: t.title })))
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 5);
 
   useEffect(() => {
     if (isOpen) {
@@ -51,18 +59,33 @@ export const NotificationCenter = ({ isOpen, onClose }: { isOpen: boolean, onClo
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              {/* Activity Feed Mockup */}
+              {/* Activity Feed */}
               <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-transparent">
                 <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">Recent Activity</h4>
                 <div className="space-y-3">
-                  <div className="bg-white dark:bg-zinc-800/30 rounded-xl p-3 text-sm shadow-sm border border-zinc-200 dark:border-zinc-800/50">
-                    <span className="font-bold text-zinc-900 dark:text-white">Sarah</span> commented on your API task.
-                    <p className="text-xs text-zinc-500 mt-1">2 hours ago</p>
-                  </div>
-                  <div className="bg-white dark:bg-zinc-800/30 rounded-xl p-3 text-sm shadow-sm border border-zinc-200 dark:border-zinc-800/50">
-                    <span className="font-bold text-zinc-900 dark:text-white">Marcus</span> merged 4 PRs for Design System.
-                    <p className="text-xs text-zinc-500 mt-1">4 hours ago</p>
-                  </div>
+                  {projectActivities.length === 0 ? (
+                    <p className="text-xs text-zinc-500 italic">No recent activity</p>
+                  ) : (
+                    projectActivities.map((a, i) => (
+                      <div key={a.id || i} className="bg-white dark:bg-zinc-800/30 rounded-xl p-3 text-sm shadow-sm border border-zinc-200 dark:border-zinc-800/50 flex gap-3">
+                         <div className={`w-8 h-8 rounded-full bg-white/5 flex items-center justify-center shrink-0 ${
+                            a.text.includes('moved') ? 'text-blue-500' :
+                            a.text.includes('created') ? 'text-emerald-500' : 'text-zinc-500'
+                          }`}>
+                            {a.text.includes('moved') ? <ArrowRight size={14} /> :
+                             a.text.includes('created') ? <Plus size={14} /> : <MessageSquare size={14} />}
+                          </div>
+                          <div>
+                            <p className="text-[11px] text-zinc-900 dark:text-white font-medium leading-tight">
+                              {a.text} <span className="text-zinc-500 font-normal">on</span> {a.taskTitle}
+                            </p>
+                            <p className="text-[10px] text-zinc-500 mt-1">
+                              {formatDistanceToNow(new Date(a.timestamp))} ago
+                            </p>
+                          </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
