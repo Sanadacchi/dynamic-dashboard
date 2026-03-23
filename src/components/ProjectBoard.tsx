@@ -21,6 +21,7 @@ import { Plus, ArrowLeft, Flag, User, GripVertical } from 'lucide-react';
 import { useProjectStore, Task, TaskStatus } from '../store/projectStore';
 import { useWorkspaceStore } from '../store/workspaceStore';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '../lib/supabase';
 import { getVocab } from '../projectVocab';
 import { PERSONA_DATA, PersonaType } from '../personaConfig';
 import { AddTaskModal } from './ProjectModals';
@@ -154,9 +155,17 @@ export const ProjectBoard = () => {
   const { currentUser, currentTenantId } = useWorkspaceStore();
   const { projects, tasks, addTask, moveTask } = useProjectStore();
 
-  const { data: dashboardData } = useQuery<any>({
-    queryKey: ['dashboard', currentTenantId?.toString()],
-    queryFn: () => currentTenantId ? fetch(`/api/dashboard/${currentTenantId}`).then(r => r.json()) : null,
+  const { data: dashboardData } = useQuery({
+    queryKey: ['dashboard', currentTenantId],
+    queryFn: async () => {
+      if (!currentTenantId) return null;
+      const [tenantRes, usersRes] = await Promise.all([
+        supabase.from('tenants').select('*').eq('id', currentTenantId).single(),
+        supabase.from('users').select('*').eq('tenant_id', currentTenantId)
+      ]);
+      if (tenantRes.error) throw tenantRes.error;
+      return { tenant: tenantRes.data, users: usersRes.data || [] };
+    },
     enabled: !!currentTenantId,
   });
 

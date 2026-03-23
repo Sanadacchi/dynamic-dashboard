@@ -36,7 +36,18 @@ export const Overview = () => {
   
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard', tenantId],
-    queryFn: () => tenantId ? fetch(`/api/dashboard/${tenantId}`).then(res => res.json()) : null,
+    queryFn: async () => {
+      if (!tenantId) return null;
+      const { data, error } = await supabase.from('tenants').select('*').eq('id', tenantId).single();
+      if (error) throw error;
+      return { 
+        tenant: data,
+        dailyGoal: {
+          goal_text: data.north_star_title,
+          category: data.north_star_category || 'Strategic Target'
+        }
+      };
+    },
     enabled: !!tenantId,
   });
 
@@ -147,7 +158,7 @@ export const Overview = () => {
       {/* Stats Grid - Aligned 2x2 for Mobile from Template */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         {widgets?.map((widget: CustomWidget) => (
-          <WidgetCard key={widget.id} widget={widget} />
+          <WidgetCard widget={widget} />
         ))}
         <button 
           onClick={() => setIsMetricBuilderOpen(true)}

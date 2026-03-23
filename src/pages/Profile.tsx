@@ -4,6 +4,7 @@ import { useWorkspaceStore } from '../store/workspaceStore';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useNotificationStore } from '../store/notificationStore';
+import { supabase } from '../lib/supabase';
 
 export const Profile = () => {
   const { currentUser, setCurrentUser, setTenantId } = useWorkspaceStore();
@@ -18,27 +19,30 @@ export const Profile = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const updateProfile = useMutation({
-    mutationFn: (data: { name: string, role: string }) => 
-      fetch(`/api/users/${currentUser?.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      }).then(res => res.json()),
+    mutationFn: async (data: { name: string, role: string }) => {
+      const { error } = await supabase
+        .from('users')
+        .update({ name: data.name, role: data.role })
+        .eq('id', currentUser?.id);
+      if (error) throw error;
+      return { success: true, user: data };
+    },
     onSuccess: (data) => {
       if (data.success && currentUser) {
         setCurrentUser({ ...currentUser, name: data.user.name, role: data.user.role });
         addNotification('SUCCESS', 'Profile updated successfully.');
         setIsEditing(false);
-        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+        queryClient.invalidateQueries({ queryKey: ['dashboard', currentUser?.tenant_id] });
       }
     }
   });
 
   const deleteAccount = useMutation({
-    mutationFn: () => 
-      fetch(`/api/users/${currentUser?.id}`, {
-        method: 'DELETE',
-      }).then(res => res.json()),
+    mutationFn: async () => {
+      const { error } = await supabase.from('users').delete().eq('id', currentUser?.id);
+      if (error) throw error;
+      return { success: true };
+    },
     onSuccess: (data) => {
       if (data.success) {
         addNotification('SUCCESS', 'Account deleted successfully.');

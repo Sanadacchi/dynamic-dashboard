@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '../lib/supabase';
 import { X, Hash, Percent, BarChart2, ChevronDown } from 'lucide-react';
 import { CustomWidget } from '../types';
 
@@ -49,19 +50,21 @@ export const EditWidgetModal = ({ widget, onClose }: EditWidgetModalProps) => {
 
   const selectedType = WIDGET_TYPES.find(t => t.value === type) || WIDGET_TYPES[0];
 
-  const save = useMutation({
-    mutationFn: () => fetch(`/api/custom-widgets/${widget.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        label,
-        type,
-        currentValue: Number(currentValue),
-        goalValue: goalValue !== '' ? Number(goalValue) : null
-      })
-    }).then(res => res.json()),
+  const updateWidget = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('custom_widgets')
+        .update({
+          label,
+          type,
+          current_value: Number(currentValue),
+          goal_value: goalValue !== '' ? Number(goalValue) : null
+        })
+        .eq('id', widget.id);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customWidgets', widget.tenant_id] });
+      queryClient.invalidateQueries({ queryKey: ['custom-widgets'] });
       onClose();
     }
   });
@@ -172,11 +175,11 @@ export const EditWidgetModal = ({ widget, onClose }: EditWidgetModalProps) => {
             Cancel
           </button>
           <button
-            onClick={() => save.mutate()}
-            disabled={save.isPending}
-            className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-xs font-bold text-white transition-colors disabled:opacity-50 shadow-lg shadow-indigo-500/20"
+            onClick={() => updateWidget.mutate()}
+            disabled={updateWidget.isPending}
+            className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
           >
-            {save.isPending ? 'Saving…' : 'Save Changes'}
+            {updateWidget.isPending ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </div>

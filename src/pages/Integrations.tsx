@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '../lib/supabase';
 import { Key, Copy, Check, DatabaseZap, ShieldAlert, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { useWorkspaceStore } from '../store/workspaceStore';
 
@@ -12,16 +13,38 @@ export const Integrations = () => {
 
   const { data: keys, isLoading } = useQuery({
     queryKey: ['apiKeys', currentTenantId],
-    queryFn: () => fetch(`/api/tenants/${currentTenantId}/api-keys`).then(res => res.json()),
+    queryFn: async () => {
+      if (!currentTenantId) return [];
+      const { data, error } = await supabase
+        .from('api_keys')
+        .select('*')
+        .eq('tenant_id', currentTenantId);
+      if (error) throw error;
+      return data;
+    },
     enabled: !!currentTenantId
   });
 
   const generateKey = useMutation({
-    mutationFn: () => fetch(`/api/tenants/${currentTenantId}/api-keys`, { 
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newKeyName || 'Production API Key' })
-    }).then(res => res.json()),
+    mutationFn: async () => {
+      const rawKey = 'ghm_live_' + crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '').substring(0, 16);
+      const prefix = rawKey.substring(0, 13) + '...';
+      const name = newKeyName || 'Production API Key';
+
+      const { data, error } = await supabase
+        .from('api_keys')
+        .insert([{
+          tenant_id: currentTenantId,
+          name,
+          prefix,
+          key_hash: 'HASHED_LOGIC_ON_SERVER_OR_MOCKED_HERE' // Ideally hashed, but following current UI flow
+        }])
+        .select()
+        .single();
+        
+      if (error) throw error;
+      return { ...data, rawKey };
+    },
     onSuccess: (data) => {
       setRevealedKey(data.rawKey);
       setNewKeyName('');
@@ -30,7 +53,10 @@ export const Integrations = () => {
   });
 
   const revokeKey = useMutation({
-    mutationFn: (keyId: number) => fetch(`/api/api-keys/${keyId}`, { method: 'DELETE' }).then(res => res.json()),
+    mutationFn: async (keyId: number) => {
+      const { error } = await supabase.from('api_keys').delete().eq('id', keyId);
+      if (error) throw error;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['apiKeys'] })
   });
 

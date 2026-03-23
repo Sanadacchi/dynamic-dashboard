@@ -5,6 +5,7 @@ import { useWorkspaceStore } from '../store/workspaceStore';
 import { useQuery } from '@tanstack/react-query';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
 import { useProjectStore } from '../store/projectStore';
+import { supabase } from '../lib/supabase';
 import { getVocab } from '../projectVocab';
 import { PERSONA_DATA, PersonaType } from '../personaConfig';
 import { AddProjectModal } from '../components/ProjectModals';
@@ -27,14 +28,22 @@ export const Projects = () => {
   const { projects, tasks, addProject } = useProjectStore();
   const [showAddProject, setShowAddProject] = useState(false);
 
-  const { data } = useQuery<any>({
-    queryKey: ['dashboard', currentTenantId?.toString()],
-    queryFn: () => currentTenantId ? fetch(`/api/dashboard/${currentTenantId}`).then(res => res.json()) : null,
+  const { data: dashboardData } = useQuery({
+    queryKey: ['dashboard', currentTenantId],
+    queryFn: async () => {
+      if (!currentTenantId) return null;
+      const [tenantRes, usersRes] = await Promise.all([
+        supabase.from('tenants').select('*').eq('id', currentTenantId).single(),
+        supabase.from('users').select('*').eq('tenant_id', currentTenantId)
+      ]);
+      if (tenantRes.error) throw tenantRes.error;
+      return { tenant: tenantRes.data, users: usersRes.data || [] };
+    },
     enabled: !!currentTenantId,
   });
 
-  const users = data?.users || [];
-  const tenant = data?.tenant;
+  const users = dashboardData?.users || [];
+  const tenant = dashboardData?.tenant;
   const personaKey = (tenant?.persona || tenant?.company_type) as PersonaType | undefined;
   
   // Fuzzy match for persona key if needed

@@ -28,20 +28,37 @@ export const WarRoom = () => {
   const [myPresence, setMyPresence] = useState('Online');
   const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
 
-  const { data } = useQuery({
+  const { data: dashboardData } = useQuery({
     queryKey: ['dashboard', tenantId],
-    queryFn: () => tenantId ? fetch(`/api/dashboard/${tenantId}`).then(res => res.json()) : null,
-    enabled: !!tenantId,
+    queryFn: async () => {
+      if (!tenantId) return null;
+      const [tenantRes, usersRes] = await Promise.all([
+        supabase.from('tenants').select('*').eq('id', tenantId).single(),
+        supabase.from('users').select('*').eq('tenant_id', tenantId)
+      ]);
+      if (tenantRes.error) throw tenantRes.error;
+      return { tenant: tenantRes.data, users: usersRes.data || [] };
+    },
+    enabled: !!tenantId
   });
 
   const { taskVelocityData, setTaskVelocityData } = useWorkspaceStore();
-  const { data: warRoomData } = useQuery({
-    queryKey: ['warRoom', tenantId],
-    queryFn: () => tenantId ? fetch(`/api/war-room/${tenantId}?authorId=${currentUser?.id}`).then(res => res.json()) : null,
-    enabled: !!tenantId,
+  const { data: warRoomData, isLoading } = useQuery({
+    queryKey: ['war-room', tenantId, currentUser?.id],
+    queryFn: async () => {
+      const [blockersRes, eodRes] = await Promise.all([
+        supabase.from('blockers').select('*, users(name)').eq('tenant_id', tenantId),
+        supabase.from('eod_reports').select('id').eq('tenant_id', tenantId).eq('author_id', currentUser?.id).eq('date', new Date().toISOString().split('T')[0])
+      ]);
+      return { 
+        blockers: blockersRes.data || [], 
+        hasSubmittedEod: (eodRes.data?.length ?? 0) > 0 
+      };
+    },
+    enabled: !!tenantId && !!currentUser
   });
 
-  const activeUsers = data?.users || [];
+  const activeUsers = dashboardData?.users || [];
   const blockers = warRoomData?.blockers || [];
 
   useEffect(() => {
@@ -85,16 +102,20 @@ export const WarRoom = () => {
   });
 
   const submitEod = useMutation({
-    mutationFn: (report_text: string) => fetch('/api/eod', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenantId, authorId: currentUser?.id, report_text })
-    }).then(res => res.json()),
-    onSuccess: (_, variables) => {
+    mutationFn: async (report_text: string) => {
+      const { error } = await supabase.from('eod_reports').insert([{
+        tenant_id: tenantId,
+        author_id: currentUser?.id,
+        report_text,
+        date: new Date().toISOString().split('T')[0]
+      }]);
+      if (error) throw error;
+    },
+    onSuccess: (_, report_text) => { // The second argument to onSuccess is the variables passed to mutationFn
       setEodStatus('submitted');
       addNotification('SUCCESS', 'EOD report submitted! Great work today.');
-      addNotification('EOD_REPORT', `${currentUser?.name || 'A team member'} submitted their EOD`, { text: variables });
-      queryClient.invalidateQueries({ queryKey: ['warRoom'] });
+      addNotification('EOD_REPORT', `${currentUser?.name || 'A team member'} submitted their EOD`, { text: report_text });
+      queryClient.invalidateQueries({ queryKey: ['war-room'] });
     }
   });
 
