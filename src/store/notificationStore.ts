@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type NotificationType = 'SUCCESS' | 'WARNING' | 'CRITICAL_BLOCKER' | 'EOD_REPORT';
+export type NotificationType = 'SUCCESS' | 'WARNING' | 'CRITICAL_BLOCKER' | 'EOD_REPORT' | 'INFO' | 'ERROR';
 
 interface Notification {
   id: string;

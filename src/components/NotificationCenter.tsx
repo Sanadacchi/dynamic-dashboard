@@ -9,6 +9,8 @@ const NOTIFICATION_ICONS: Record<NotificationType, any> = {
   WARNING: { icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-500/10' },
   CRITICAL_BLOCKER: { icon: AlertCircle, color: 'text-rose-500', bg: 'bg-rose-500/10' },
   EOD_REPORT: { icon: FileText, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
+  INFO: { icon: AlertCircle, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+  ERROR: { icon: X, color: 'text-rose-500', bg: 'bg-rose-500/10' },
 };
 
 export const NotificationCenter = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
@@ -75,7 +77,7 @@ export const NotificationCenter = ({ isOpen, onClose }: { isOpen: boolean, onClo
               ) : (
                 <div className="divide-y divide-zinc-800/50">
                   {notifications.map((notification) => {
-                    const style = NOTIFICATION_ICONS[notification.type];
+                    const style = NOTIFICATION_ICONS[notification.type] || NOTIFICATION_ICONS.INFO;
                     const Icon = style.icon;
                     return (
                       <div 
@@ -93,7 +95,13 @@ export const NotificationCenter = ({ isOpen, onClose }: { isOpen: boolean, onClo
                                 {notification.message}
                               </p>
                               <span className="text-[10px] text-zinc-600 whitespace-nowrap pt-0.5">
-                                {format(new Date(notification.timestamp), 'MMM d, HH:mm')}
+                                {(() => {
+                                  try {
+                                    return notification.timestamp ? format(new Date(notification.timestamp), 'MMM d, HH:mm') : 'Just now';
+                                  } catch (e) {
+                                    return 'Just now';
+                                  }
+                                })()}
                               </span>
                             </div>
                             <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-2">

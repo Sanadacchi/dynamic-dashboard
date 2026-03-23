@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Outlet, useParams, NavLink } from 'react-router-dom';
 import { Target, Bell, Settings, UserCircle, LayoutDashboard } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
 import { TopNavbar } from '../components/TopNavbar';
-import { RightSidebar } from '../components/RightSidebar';
 import { NotificationCenter } from '../components/NotificationCenter';
 import { useWorkspaceStore } from '../store/workspaceStore';
 import { useLayoutStore } from '../store/layoutStore';
@@ -11,18 +10,10 @@ import { useQuery } from '@tanstack/react-query';
 
 export const DashboardLayout = () => {
   const { tenantId: urlTenantId } = useParams<{ tenantId: string }>();
-  const { currentTenantId: tenantId, setTenantId } = useWorkspaceStore();
-  const { isLeftSidebarOpen, isRightSidebarOpen, theme } = useLayoutStore();
+  const { currentTenantId: tenantId } = useWorkspaceStore();
+  const { setTenantId, setCurrentUser } = useWorkspaceStore();
+  const { isLeftSidebarOpen } = useLayoutStore();
   const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
-
-  // Sync theme to DOM for persistence
-  React.useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
 
   React.useEffect(() => {
     if (urlTenantId) {
@@ -49,10 +40,7 @@ export const DashboardLayout = () => {
         </div>
       </main>
 
-      {/* Right Sidebar - Desktop Only */}
-      <div className={`hidden lg:block transition-all duration-300 h-full shrink-0 ${isRightSidebarOpen ? 'w-72' : 'w-0 overflow-hidden'}`}>
-        <RightSidebar users={data?.users || []} />
-      </div>
+
 
       <NotificationCenter 
         isOpen={isNotificationCenterOpen} 

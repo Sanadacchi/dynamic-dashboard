@@ -34,11 +34,24 @@ export const Projects = () => {
   });
 
   const users = data?.users || [];
-  const personaKey = data?.tenant?.persona as PersonaType | undefined;
-  const vocab = getVocab(personaKey);
-  const personaConfig = personaKey ? PERSONA_DATA[personaKey] : null;
+  const tenant = data?.tenant;
+  const personaKey = (tenant?.persona || tenant?.company_type) as PersonaType | undefined;
+  
+  // Fuzzy match for persona key if needed
+  const normalizedPersonaKey = personaKey ? (Object.keys(PERSONA_DATA).find(k => 
+    k === personaKey || k.includes(personaKey) || personaKey.includes(k)
+  ) as PersonaType) : undefined;
+
+  const vocab = getVocab(normalizedPersonaKey);
+  const personaConfig = normalizedPersonaKey ? PERSONA_DATA[normalizedPersonaKey] : null;
 
   const tenantProjects = projects.filter(p => p.tenantId === currentTenantId);
+
+  React.useEffect(() => {
+    if (currentTenantId) {
+      useProjectStore.getState().fetchData(currentTenantId);
+    }
+  }, [currentTenantId]);
 
   return (
     <div className="p-6 md:p-8 space-y-8">

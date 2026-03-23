@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
 
@@ -105,7 +105,6 @@ export const useProjectStore = create<ProjectState>()(
 
         if (error) {
           console.error('Failed to add project', error);
-          alert('Failed to add project: ' + error.message);
           return null;
         }
 
@@ -135,7 +134,6 @@ export const useProjectStore = create<ProjectState>()(
 
         if (error) {
           console.error('Failed to add task', error);
-          alert('Failed to add task: ' + error.message);
           return;
         }
 

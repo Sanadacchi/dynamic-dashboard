@@ -154,18 +154,31 @@ export const ProjectBoard = () => {
   const { currentUser, currentTenantId } = useWorkspaceStore();
   const { projects, tasks, addTask, moveTask } = useProjectStore();
 
-  const { data } = useQuery<any>({
+  const { data: dashboardData } = useQuery<any>({
     queryKey: ['dashboard', currentTenantId?.toString()],
     queryFn: () => currentTenantId ? fetch(`/api/dashboard/${currentTenantId}`).then(r => r.json()) : null,
     enabled: !!currentTenantId,
   });
 
-  const users = data?.users || [];
-  const personaKey = data?.tenant?.persona as PersonaType | undefined;
-  const vocab = getVocab(personaKey);
+  const users = dashboardData?.users || [];
+  const tenant = dashboardData?.tenant;
+  const personaKey = (tenant?.persona || tenant?.company_type) as PersonaType | undefined;
+  
+  // Fuzzy match for persona key if needed
+  const normalizedPersonaKey = personaKey ? (Object.keys(PERSONA_DATA).find(k => 
+    k === personaKey || k.includes(personaKey) || personaKey.includes(k)
+  ) as PersonaType) : undefined;
+
+  const vocab = getVocab(normalizedPersonaKey);
 
   const project = projects.find(p => p.id === projectId);
   const projectTasks = tasks.filter(t => t.projectId === projectId);
+
+  React.useEffect(() => {
+    if (currentTenantId) {
+      useProjectStore.getState().fetchData(currentTenantId);
+    }
+  }, [currentTenantId]);
 
   const [addTaskColumn, setAddTaskColumn] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -256,6 +269,7 @@ export const ProjectBoard = () => {
           users={users}
           onSave={(taskData) => addTask({
             ...taskData,
+            tenantId: currentTenantId!,
             projectId: projectId!,
             status: addTaskColumn as TaskStatus,
           })}
