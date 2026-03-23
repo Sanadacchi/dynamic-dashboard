@@ -17,7 +17,6 @@ import { useWidgetData } from '../hooks/useWidgetData';
 import { PERSONA_DATA, TREND_ICON, TREND_COLOR } from '../personaConfig';
 import { lineData } from '../mockData';
 import { WidgetConfig, CustomWidget } from '../types';
-import { supabase } from '../lib/supabase';
 
 export const Overview = () => {
   const navigate = useNavigate();
@@ -35,48 +34,13 @@ export const Overview = () => {
   
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard', tenantId],
-    queryFn: async () => {
-      if (!tenantId) return null;
-      
-      const { data: tenant, error: tError } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('id', tenantId)
-        .single();
-      if (tError) throw tError;
-
-      const { data: users, error: uError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('tenant_id', tenantId);
-      if (uError) throw uError;
-
-      const { data: dailyGoal, error: gError } = await supabase
-        .from('daily_goals')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-      // Handle the case where no goal exists yet
-      const goal = gError ? null : dailyGoal;
-
-      return { tenant, users, dailyGoal: goal };
-    },
+    queryFn: () => tenantId ? fetch(`/api/dashboard/${tenantId}`).then(res => res.json()) : null,
     enabled: !!tenantId,
   });
 
   const { data: customWidgets } = useQuery({
     queryKey: ['customWidgets', tenantId],
-    queryFn: async () => {
-      if (!tenantId) return [];
-      const { data, error } = await supabase
-        .from('custom_widgets')
-        .select('*')
-        .eq('tenant_id', tenantId);
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => tenantId ? fetch(`/api/custom-widgets/${tenantId}`).then(res => res.json()) : null,
     enabled: !!tenantId,
   });
 
@@ -94,17 +58,12 @@ export const Overview = () => {
   }, [data]);
 
   const goalMutation = useMutation({
-    mutationFn: async (goalData: { text: string, category: string }) => {
-      const { error } = await supabase
-        .from('daily_goals')
-        .insert([{
-          tenant_id: tenantId,
-          goal_text: goalData.text,
-          category: goalData.category
-        }]);
-      if (error) throw error;
-      return { success: true };
-    },
+    mutationFn: (goalData: { text: string, category: string }) => 
+      fetch('/api/daily-goal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId, goalText: goalData.text, category: goalData.category })
+      }).then(res => res.json()),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dashboard'] })
   });
 

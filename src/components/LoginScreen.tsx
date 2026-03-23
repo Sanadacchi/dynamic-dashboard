@@ -2,17 +2,12 @@ import React, { useState } from 'react';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { Zap, ChevronRight, Check, Pencil, Search, Users } from 'lucide-react';
 import { PERSONA_DATA, PersonaType } from '../personaConfig';
-import { supabase } from '../lib/supabase';
 
 export const LoginScreen = ({ onLogin }: { onLogin: (tenantId: number, userId: number, name: string) => void }) => {
   const queryClient = useQueryClient();
   const { data: tenants, isLoading: loadingTenants } = useQuery({
     queryKey: ['tenants'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('tenants').select('*');
-      if (error) throw error;
-      return data;
-    }
+    queryFn: () => fetch('/api/tenants').then(res => res.json())
   });
 
   const [selectedTenantId, setSelectedTenantId] = useState<number | null>(null);
@@ -47,15 +42,7 @@ export const LoginScreen = ({ onLogin }: { onLogin: (tenantId: number, userId: n
   
   const { data: dashboardData, isLoading: loadingDashboard } = useQuery({
     queryKey: ['dashboard', selectedTenantId],
-    queryFn: async () => {
-      if (!selectedTenantId) return null;
-      const { data: users, error: uError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('tenant_id', selectedTenantId);
-      if (uError) throw uError;
-      return { users };
-    },
+    queryFn: () => fetch(`/api/dashboard/${selectedTenantId}`).then(res => res.json()),
     enabled: !!selectedTenantId
   });
 
@@ -68,22 +55,10 @@ export const LoginScreen = ({ onLogin }: { onLogin: (tenantId: number, userId: n
   const [tracker2, setTracker2] = useState(defaultChips.chip_2);
 
   const createTenant = useMutation({
-    mutationFn: async (data: { name: string, companyType: string, primaryColor: string, customLabels: any }) => {
-      const { data: tenant, error } = await supabase
-        .from('tenants')
-        .insert([{
-          name: data.name,
-          daily_burn: 0,
-          total_balance: 0,
-          company_type: data.companyType,
-          primary_color: data.primaryColor,
-          custom_labels: data.customLabels
-        }])
-        .select()
-        .single();
-      if (error) throw error;
-      return tenant;
-    },
+    mutationFn: (data: { name: string, companyType: string, primaryColor: string, customLabels: any }) => fetch('/api/tenants', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: data.name, dailyBurn: 0, totalBalance: 0, companyType: data.companyType, primaryColor: data.primaryColor, customLabels: data.customLabels })
+    }).then(res => res.json()),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
       setSelectedTenantId(data.id);
@@ -93,20 +68,10 @@ export const LoginScreen = ({ onLogin }: { onLogin: (tenantId: number, userId: n
   const [newUserName, setNewUserName] = useState("");
   const [newUserRole, setNewUserRole] = useState("Contributor");
   const createUser = useMutation({
-    mutationFn: async (name: string) => {
-      const { data: user, error } = await supabase
-        .from('users')
-        .insert([{
-          tenant_id: selectedTenantId,
-          name,
-          role: newUserRole || 'Contributor',
-          status: 'Online'
-        }])
-        .select()
-        .single();
-      if (error) throw error;
-      return user;
-    },
+    mutationFn: (name: string) => fetch('/api/users', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tenantId: selectedTenantId, name, role: newUserRole || 'Contributor' })
+    }).then(res => res.json()),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['dashboard', selectedTenantId] });
       onLogin(selectedTenantId!, data.id, data.name);
@@ -116,14 +81,11 @@ export const LoginScreen = ({ onLogin }: { onLogin: (tenantId: number, userId: n
   const [editingRoleUserId, setEditingRoleUserId] = useState<number | null>(null);
   const [editingRoleValue, setEditingRoleValue] = useState("");
   const updateRole = useMutation({
-    mutationFn: async ({ id, role }: { id: number; role: string }) => {
-      const { error } = await supabase
-        .from('users')
-        .update({ role })
-        .eq('id', id);
-      if (error) throw error;
-      return { success: true };
-    },
+    mutationFn: ({ id, role }: { id: number; role: string }) =>
+      fetch(`/api/users/${id}/role`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role })
+      }).then(res => res.json()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard', selectedTenantId] });
       setEditingRoleUserId(null);
