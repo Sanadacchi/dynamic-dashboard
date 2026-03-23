@@ -43,7 +43,7 @@ export const useNorthStarStore = create<NorthStarState>((set, get) => ({
     try {
       const { data, error } = await supabase
         .from('tenants')
-        .select('north_star_title, north_star_description, north_star_milestones')
+        .select('north_star_title, north_star_description, north_star_milestones, north_star_chart_data')
         .eq('id', tenantId)
         .single();
       
@@ -55,6 +55,14 @@ export const useNorthStarStore = create<NorthStarState>((set, get) => ({
           description: data.north_star_description || '',
         },
         milestones: data.north_star_milestones ? (typeof data.north_star_milestones === 'string' ? JSON.parse(data.north_star_milestones) : data.north_star_milestones) : [],
+        chartData: data.north_star_chart_data ? (typeof data.north_star_chart_data === 'string' ? JSON.parse(data.north_star_chart_data) : data.north_star_chart_data) : [
+          { name: 'Jan', value: 400 },
+          { name: 'Feb', value: 300 },
+          { name: 'Mar', value: 600 },
+          { name: 'Apr', value: 800 },
+          { name: 'May', value: 500 },
+          { name: 'Jun', value: 900 },
+        ],
         isLoading: false
       });
     } catch (err) {
@@ -62,14 +70,18 @@ export const useNorthStarStore = create<NorthStarState>((set, get) => ({
     }
   },
 
-  updateObjective: async (tenantId: number, data: { title: string; description: string; milestones: Milestone[] }) => {
+  updateObjective: async (tenantId: number, data: { title: string; description: string; milestones: Milestone[]; chartData?: any[] }) => {
+    const { chartData: currentChartData } = get();
+    const finalChartData = data.chartData || currentChartData;
+    
     try {
       const { error } = await supabase
         .from('tenants')
         .update({ 
           north_star_title: data.title, 
           north_star_description: data.description,
-          north_star_milestones: data.milestones
+          north_star_milestones: data.milestones,
+          north_star_chart_data: finalChartData
         })
         .eq('id', tenantId);
       
@@ -77,7 +89,8 @@ export const useNorthStarStore = create<NorthStarState>((set, get) => ({
       
       set({ 
         objective: { title: data.title, description: data.description },
-        milestones: data.milestones
+        milestones: data.milestones,
+        chartData: finalChartData
       });
     } catch (err) {
       console.error('Failed to update objective:', err);

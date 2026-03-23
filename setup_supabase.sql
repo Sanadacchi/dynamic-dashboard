@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS public.tenants (
     north_star_title TEXT DEFAULT 'Define your ultimate objective',
     north_star_description TEXT DEFAULT 'The North Star Metric is the single key performance indicator that best captures the core value your product delivers to customers.',
     north_star_milestones JSONB DEFAULT '[]',
+    north_star_chart_data JSONB DEFAULT '[{"name": "Jan", "value": 400}, {"name": "Feb", "value": 300}, {"name": "Mar", "value": 600}, {"name": "Apr", "value": 800}, {"name": "May", "value": 500}, {"name": "Jun", "value": 900}]',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

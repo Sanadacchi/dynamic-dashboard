@@ -46,13 +46,15 @@ export const WarRoom = () => {
   const { data: warRoomData, isLoading } = useQuery({
     queryKey: ['war-room', tenantId, currentUser?.id],
     queryFn: async () => {
-      const [blockersRes, eodRes] = await Promise.all([
+      const [blockersRes, eodRes, reportsRes] = await Promise.all([
         supabase.from('blockers').select('*, users(name)').eq('tenant_id', tenantId),
-        supabase.from('eod_reports').select('id').eq('tenant_id', tenantId).eq('author_id', currentUser?.id).eq('date', new Date().toISOString().split('T')[0])
+        supabase.from('eod_reports').select('id').eq('tenant_id', tenantId).eq('author_id', currentUser?.id).eq('date', new Date().toISOString().split('T')[0]),
+        supabase.from('eod_reports').select('*, users(name)').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(5)
       ]);
       return { 
         blockers: blockersRes.data || [], 
-        hasSubmittedEod: (eodRes.data?.length ?? 0) > 0 
+        hasSubmittedEod: (eodRes.data?.length ?? 0) > 0,
+        recentReports: reportsRes.data || []
       };
     },
     enabled: !!tenantId && !!currentUser
@@ -295,6 +297,27 @@ export const WarRoom = () => {
                 <div className="py-4 bg-indigo-500/20 text-indigo-400 rounded-2xl font-bold border border-indigo-500/30 flex items-center justify-center gap-2">
                   <CheckCircle2 size={18} /> Submitted
                 </div>
+              )}
+            </div>
+          </section>
+
+          {/* Recent EOD Reports */}
+          <section className="bg-white/5 border border-zinc-800 rounded-3xl p-6">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4 flex items-center gap-2">
+              <Clock size={14} /> Recent Team EODs
+            </h3>
+            <div className="space-y-3">
+              {(warRoomData as any)?.recentReports?.map((report: any) => (
+                <div key={report.id} className="p-3 bg-white/5 rounded-xl border border-zinc-800/50">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] font-bold text-white">{report.users?.name || 'Unknown User'}</span>
+                    <span className="text-[9px] text-zinc-600">{format(new Date(report.created_at), 'HH:mm')}</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 italic line-clamp-2">"{report.report_text}"</p>
+                </div>
+              ))}
+              {(!warRoomData as any)?.recentReports?.length && (
+                <p className="text-[10px] text-zinc-600 italic">No reports submitted today.</p>
               )}
             </div>
           </section>
