@@ -70,141 +70,140 @@ const saveDB = (db: DB) => {
 };
 
 export const initMockBackend = () => {
-  // Only intercept if we're in production or if requested
-  const isNetlify = window.location.hostname.includes('netlify.app');
-  const isLocal = window.location.hostname === 'localhost';
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   
-  // We'll intercept in production always, and for local dev it lets us test the mock
-  if (!isNetlify && isLocal) {
-     console.log('Mock Backend: Local environment detected, using real server if available.');
-     // Optionally allow forcing mock mode with ?mock=true
-     if (!window.location.search.includes('mock=true')) return;
+  // In development, we only use mock mode if ?mock=true is present.
+  // In production (Netlify), we ALWAYS use mock mode because there is no server.
+  if (isLocal && !window.location.search.includes('mock=true')) {
+    return;
   }
 
-  console.warn('🚀 Mock Backend Active: Intercepting API calls to LocalStorage');
+  console.log('%c🚀 Grahamly Mock Backend Activated', 'color: #6366f1; font-weight: bold; font-size: 14px;');
+  console.log('Interception mode: Storage-only (LocalStorage)');
 
   const originalFetch = window.fetch;
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const url = input.toString();
+    const rawUrl = typeof input === 'string' ? input : (input instanceof URL ? input.href : input.url);
     
-    // Only intercept /api routes
-    if (!url.includes('/api/')) {
+    // Only intercept routes that contain /api/
+    if (!rawUrl.includes('/api/')) {
       return originalFetch(input, init);
     }
 
+    const url = new URL(rawUrl, window.location.origin);
+    const path = url.pathname;
+    const method = init?.method?.toUpperCase() || 'GET';
     const db = getDB();
     const headers = { 'Content-Type': 'application/json' };
 
+    console.group(`📡 Mock API: ${method} ${path}`);
+
     try {
-      // --- Handle GET /api/tenants ---
-      if (url.endsWith('/api/tenants') && init?.method === 'GET' || !init?.method) {
-        return new Response(JSON.stringify(db.tenants), { status: 200, headers });
+      // --- Handle tenants ---
+      if (path === '/api/tenants') {
+        if (method === 'GET') {
+          console.log('Returning tenants list:', db.tenants);
+          console.groupEnd();
+          return new Response(JSON.stringify(db.tenants), { status: 200, headers });
+        }
+        if (method === 'POST') {
+          const body = JSON.parse(init?.body as string);
+          const newId = db.tenants.length > 0 ? Math.max(...db.tenants.map(t => t.id)) + 1 : 1;
+          const newTenant = {
+            id: newId,
+            name: body.name,
+            daily_burn: body.dailyBurn || 0,
+            total_balance: body.totalBalance || 0,
+            company_type: body.companyType,
+            primary_color: body.primaryColor,
+            custom_labels: body.customLabels ? JSON.stringify(body.customLabels) : null,
+            dashboard_layout: JSON.stringify([
+              { id: 'w1', type: 'STAT_CARD', label: 'Runway Days', metricDataKey: 'runway', color: 'bg-blue-500', rolesRequired: ['OWNER', 'MANAGER'] },
+              { id: 'w2', type: 'NORTH_STAR', label: 'North Star', rolesRequired: ['OWNER', 'MANAGER', 'CONTRIBUTOR'] }
+            ])
+          };
+          db.tenants.push(newTenant);
+          saveDB(db);
+          console.log('Created new tenant:', newTenant);
+          console.groupEnd();
+          return new Response(JSON.stringify(newTenant), { status: 200, headers });
+        }
       }
 
-      // --- Handle POST /api/tenants ---
-      if (url.endsWith('/api/tenants') && init?.method === 'POST') {
-        const body = JSON.parse(init.body as string);
-        const newId = db.tenants.length > 0 ? Math.max(...db.tenants.map(t => t.id)) + 1 : 1;
-        const newTenant = {
-          id: newId,
-          name: body.name,
-          daily_burn: body.dailyBurn || 0,
-          total_balance: body.totalBalance || 0,
-          company_type: body.companyType,
-          primary_color: body.primaryColor,
-          custom_labels: body.customLabels ? JSON.stringify(body.customLabels) : null,
-          dashboard_layout: JSON.stringify([
-            { id: 'w1', type: 'STAT_CARD', label: 'Runway Days', metricDataKey: 'runway', color: 'bg-blue-500', rolesRequired: ['OWNER', 'MANAGER'] },
-            { id: 'w2', type: 'NORTH_STAR', label: 'North Star', rolesRequired: ['OWNER', 'MANAGER', 'CONTRIBUTOR'] }
-          ])
-        };
-        db.tenants.push(newTenant);
-        saveDB(db);
-        return new Response(JSON.stringify(newTenant), { status: 200, headers });
-      }
-
-      // --- Handle GET /api/dashboard/:id ---
-      const dashboardMatch = url.match(/\/api\/dashboard\/(\d+)/);
-      if (dashboardMatch && (init?.method === 'GET' || !init?.method)) {
+      // --- Handle dashboard ---
+      const dashboardMatch = path.match(/\/api\/dashboard\/(\d+)/);
+      if (dashboardMatch && method === 'GET') {
         const tenantId = parseInt(dashboardMatch[1]);
         const tenant = db.tenants.find(t => t.id === tenantId);
         const users = db.users.filter(u => u.tenant_id === tenantId);
-        // Simplification for mock
-        return new Response(JSON.stringify({
-          tenant: { ...tenant, custom_labels: tenant.custom_labels ? JSON.parse(tenant.custom_labels) : {} },
+        const data = {
+          tenant: tenant ? { ...tenant, custom_labels: tenant.custom_labels ? JSON.parse(tenant.custom_labels) : {} } : null,
           users: users.map(u => ({ ...u, tasks: [], achievement: null })),
           dailyGoal: null,
           documents: [],
           socialPosts: []
-        }), { status: 200, headers });
-      }
-
-      // --- Handle POST /api/users ---
-      if (url.endsWith('/api/users') && init?.method === 'POST') {
-        const body = JSON.parse(init.body as string);
-        const newId = db.users.length > 0 ? Math.max(...db.users.map(u => u.id)) + 1 : 1;
-        const newUser = {
-          id: newId,
-          tenant_id: body.tenantId,
-          name: body.name,
-          role: body.role || 'Contributor',
-          status: 'Offline'
         };
-        db.users.push(newUser);
-        saveDB(db);
-        return new Response(JSON.stringify(newUser), { status: 200, headers });
+        console.log('Returning dashboard data for tenant:', tenantId);
+        console.groupEnd();
+        return new Response(JSON.stringify(data), { status: 200, headers });
       }
 
-      // --- Handle PATCH /api/users/:id/role ---
-      const roleMatch = url.match(/\/api\/users\/(\d+)\/role/);
-      if (roleMatch && init?.method === 'PATCH') {
+      // --- Handle users ---
+      if (path === '/api/users') {
+        if (method === 'POST') {
+          const body = JSON.parse(init?.body as string);
+          const newId = db.users.length > 0 ? Math.max(...db.users.map(u => u.id)) + 1 : 1;
+          const newUser = {
+            id: newId,
+            tenant_id: body.tenantId,
+            name: body.name,
+            role: body.role || 'Contributor',
+            status: 'Offline'
+          };
+          db.users.push(newUser);
+          saveDB(db);
+          console.log('Created new user:', newUser);
+          console.groupEnd();
+          return new Response(JSON.stringify(newUser), { status: 200, headers });
+        }
+      }
+
+      // --- Handle user roles ---
+      const roleMatch = path.match(/\/api\/users\/(\d+)\/role/);
+      if (roleMatch && method === 'PATCH') {
         const userId = parseInt(roleMatch[1]);
-        const body = JSON.parse(init.body as string);
+        const body = JSON.parse(init?.body as string);
         const userIndex = db.users.findIndex(u => u.id === userId);
         if (userIndex !== -1) {
           db.users[userIndex].role = body.role;
           saveDB(db);
         }
+        console.log('Updated user role:', userId, body.role);
+        console.groupEnd();
         return new Response(JSON.stringify({ success: true }), { status: 200, headers });
       }
 
-      // --- Handle GET /api/war-room/:tenantId ---
-      const warRoomMatch = url.match(/\/api\/war-room\/(\d+)/);
-      if (warRoomMatch && (init?.method === 'GET' || !init?.method)) {
+      // --- Handle war-room ---
+      const warRoomMatch = path.match(/\/api\/war-room\/(\d+)/);
+      if (warRoomMatch && method === 'GET') {
         const tenantId = parseInt(warRoomMatch[1]);
         const blockers = db.blockers.filter(b => b.tenant_id === tenantId);
-        // Simple mock for War Room
+        console.log('Returning war-room data for tenant:', tenantId);
+        console.groupEnd();
         return new Response(JSON.stringify({ 
           blockers: blockers.map(b => ({ ...b, user: db.users.find(u => u.id === b.author_id)?.name || 'Unknown' })),
           hasSubmittedEod: false 
         }), { status: 200, headers });
       }
 
-      // --- Handle POST /api/blockers ---
-      if (url.endsWith('/api/blockers') && init?.method === 'POST') {
-        const body = JSON.parse(init.body as string);
-        const newId = db.blockers.length > 0 ? Math.max(...db.blockers.map(b => b.id)) + 1 : 1;
-        const newBlocker = {
-          id: newId,
-          tenant_id: body.tenantId,
-          author_id: body.authorId,
-          task: body.task,
-          blocker_text: body.blocker_text,
-          is_escalated: body.is_escalated,
-          created_at: new Date().toISOString()
-        };
-        db.blockers.push(newBlocker);
-        saveDB(db);
-        return new Response(JSON.stringify({ success: true }), { status: 200, headers });
-      }
-
-      // Fallback for other /api routes
-      console.log(`Mock Backend: Unhandled route ${init?.method || 'GET'} ${url}, passing through.`);
+      console.warn(`⚠️ Mock Backend: Route not manually handled, passing through.`);
+      console.groupEnd();
       return originalFetch(input, init);
 
     } catch (error) {
-      console.error('Mock Backend Error:', error);
+      console.error('❌ Mock Backend Error:', error);
+      console.groupEnd();
       return originalFetch(input, init);
     }
   };
