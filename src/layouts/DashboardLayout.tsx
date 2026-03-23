@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, useParams, NavLink } from 'react-router-dom';
+import { Outlet, useParams, NavLink, useLocation } from 'react-router-dom';
 import { Target, Bell, Settings, UserCircle, LayoutDashboard } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
 import { TopNavbar } from '../components/TopNavbar';
@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 
 export const DashboardLayout = () => {
   const { tenantId: urlTenantId } = useParams<{ tenantId: string }>();
+  const location = useLocation();
   const { currentTenantId: tenantId, setTenantId } = useWorkspaceStore();
   const { isLeftSidebarOpen, isRightSidebarOpen, theme } = useLayoutStore();
   const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
