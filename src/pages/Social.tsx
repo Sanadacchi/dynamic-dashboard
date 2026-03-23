@@ -3,6 +3,7 @@ import { MessageSquare, Heart, Share2, Image as ImageIcon, Pencil, Trash2 } from
 import { useWorkspaceStore } from '../store/workspaceStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
+import { supabase } from '../lib/supabase';
 
 export const Social = () => {
   const { currentTenantId, currentUser } = useWorkspaceStore();
@@ -12,41 +13,85 @@ export const Social = () => {
   const [editingPostId, setEditingPostId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState('');
 
-  const { data } = useQuery<any>({ queryKey: ['dashboard', currentTenantId?.toString()] });
-  const posts = data?.socialPosts || [];
+  const { data: postsData } = useQuery<any>({ 
+    queryKey: ['socialPosts', currentTenantId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('social_posts')
+        .select('*')
+        .eq('tenant_id', currentTenantId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!currentTenantId
+  });
+  const posts = postsData || [];
 
   const createPost = useMutation({
-    mutationFn: () => fetch('/api/social', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenantId: currentTenantId, authorId: currentUser?.id, content })
-    }).then(res => res.json()),
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('social_posts')
+        .insert([{
+          tenant_id: currentTenantId,
+          author_id: currentUser?.id,
+          author_name: currentUser?.name || 'Unknown',
+          author_role: currentUser?.role || 'Team Member',
+          content: content
+        }]);
+      if (error) throw error;
+      return { success: true };
+    },
     onSuccess: () => {
       setContent('');
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['socialPosts'] });
     }
   });
 
   const likePost = useMutation({
-    mutationFn: (postId: number) => fetch(`/api/social/${postId}/like`, { method: 'POST' }).then(res => res.json()),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+    mutationFn: async (postId: number) => {
+      const { data, error: fetchError } = await supabase
+        .from('social_posts')
+        .select('likes')
+        .eq('id', postId)
+        .single();
+      if (fetchError) throw fetchError;
+
+      const { error: updateError } = await supabase
+        .from('social_posts')
+        .update({ likes: (data.likes || 0) + 1 })
+        .eq('id', postId);
+      if (updateError) throw updateError;
+      return { success: true };
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['socialPosts'] })
   });
 
   const editPost = useMutation({
-    mutationFn: (args: { postId: number, content: string }) => fetch(`/api/social/${args.postId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: args.content, authorId: currentUser?.id })
-    }).then(res => res.json()),
+    mutationFn: async (args: { postId: number, content: string }) => {
+      const { error } = await supabase
+        .from('social_posts')
+        .update({ content: args.content })
+        .eq('id', args.postId);
+      if (error) throw error;
+      return { success: true };
+    },
     onSuccess: () => {
       setEditingPostId(null);
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['socialPosts'] });
     }
   });
 
   const deletePost = useMutation({
-    mutationFn: (postId: number) => fetch(`/api/social/${postId}?authorId=${currentUser?.id}`, { method: 'DELETE' }).then(res => res.json()),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+    mutationFn: async (postId: number) => {
+      const { error } = await supabase
+        .from('social_posts')
+        .delete()
+        .eq('id', postId);
+      if (error) throw error;
+      return { success: true };
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['socialPosts'] })
   });
 
   return (

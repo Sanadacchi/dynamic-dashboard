@@ -9,6 +9,8 @@ const NOTIFICATION_ICONS: Record<NotificationType, any> = {
   WARNING: { icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-500/10' },
   CRITICAL_BLOCKER: { icon: AlertCircle, color: 'text-rose-500', bg: 'bg-rose-500/10' },
   EOD_REPORT: { icon: FileText, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
+  INFO: { icon: AlertCircle, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+  ERROR: { icon: X, color: 'text-rose-500', bg: 'bg-rose-500/10' },
 };
 
 export const NotificationCenter = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {

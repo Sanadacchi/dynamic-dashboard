@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { supabase } from '../lib/supabase';
 import { useWorkspaceStore } from './workspaceStore';
 
 export interface Milestone {
@@ -33,9 +34,19 @@ export const useNorthStarStore = create<NorthStarState>((set) => ({
   ],
   fetchNorthStar: async (tenantId) => {
     try {
-      const res = await fetch(`/api/tenants/${tenantId}/north-star`, { headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } });
-      const data = await res.json();
-      set({ objective: { title: data.title, description: data.description }, milestones: data.milestones });
+      const { data, error } = await supabase
+        .from('tenants')
+        .select('north_star_title, north_star_description, north_star_milestones')
+        .eq('id', tenantId)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        set({ 
+          objective: { title: data.north_star_title, description: data.north_star_description }, 
+          milestones: data.north_star_milestones || [] 
+        });
+      }
     } catch (e) {
       console.error('Failed to load North Star', e);
     }
@@ -43,11 +54,16 @@ export const useNorthStarStore = create<NorthStarState>((set) => ({
   updateObjective: async (tenantId, data) => {
     if (!tenantId) return;
     try {
-      await fetch(`/api/tenants/${tenantId}/north-star`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
+      const { error } = await supabase
+        .from('tenants')
+        .update({
+          north_star_title: data.title,
+          north_star_description: data.description,
+          north_star_milestones: data.milestones
+        })
+        .eq('id', tenantId);
+
+      if (error) throw error;
       set({ objective: { title: data.title, description: data.description }, milestones: data.milestones });
     } catch (e) {
       console.error('Failed to save North Star', e);
@@ -66,16 +82,14 @@ export const useNorthStarStore = create<NorthStarState>((set) => ({
     });
 
     try {
-      // Async database pipeline behind optimistic visuals
-      await fetch(`/api/tenants/${tenantId}/north-star`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: currentObjective.title,
-          description: currentObjective.description,
-          milestones: updatedMilestones
+      const { error } = await supabase
+        .from('tenants')
+        .update({
+          north_star_milestones: updatedMilestones
         })
-      });
+        .eq('id', tenantId);
+
+      if (error) throw error;
     } catch (e) {
       console.error('Failed to toggle milestone', e);
     }

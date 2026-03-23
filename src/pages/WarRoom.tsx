@@ -13,6 +13,7 @@ import { useWorkspaceStore } from '../store/workspaceStore';
 import { useNotificationStore } from '../store/notificationStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
+import { supabase } from '../lib/supabase';
 
 export const WarRoom = () => {
   useRealtimeSync();
@@ -27,20 +28,63 @@ export const WarRoom = () => {
   const [myPresence, setMyPresence] = useState('Online');
   const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
 
-  const { data } = useQuery({
-    queryKey: ['dashboard', tenantId],
-    queryFn: () => tenantId ? fetch(`/api/dashboard/${tenantId}`).then(res => res.json()) : null,
+  const { data: userData } = useQuery({
+    queryKey: ['users', tenantId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('tenant_id', tenantId);
+      if (error) throw error;
+      return data;
+    },
     enabled: !!tenantId,
   });
 
   const { data: warRoomData } = useQuery({
     queryKey: ['warRoom', tenantId],
-    queryFn: () => tenantId ? fetch(`/api/war-room/${tenantId}?authorId=${currentUser?.id}`).then(res => res.json()) : null,
-    enabled: !!tenantId,
+    queryFn: async () => {
+      const { data: blockers, error: bError } = await supabase
+        .from('blockers')
+        .select('*, users!inner(name)')
+        .eq('tenant_id', tenantId);
+      if (bError) throw bError;
+
+      const { data: eod, error: eError } = await supabase
+        .from('eod_reports')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('author_id', currentUser?.id)
+        .gte('created_at', startOfToday().toISOString())
+        .single();
+      
+      const formattedBlockers = blockers.map(b => ({
+        id: b.id,
+        user: b.users?.name || 'Unknown',
+        task: b.task,
+        blocker: b.blocker_text,
+        escalated: b.is_escalated
+      }));
+
+      return { blockers: formattedBlockers, hasSubmittedEod: !!eod };
+    },
+    enabled: !!tenantId && !!currentUser?.id,
   });
 
-  const activeUsers = data?.users || [];
+  const activeUsers = userData || [];
   const blockers = warRoomData?.blockers || [];
+
+  useEffect(() => {
+    const updatePresence = async () => {
+      if (!currentUser?.id) return;
+      await supabase
+        .from('users')
+        .update({ status: myPresence })
+        .eq('id', currentUser.id);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    };
+    updatePresence();
+  }, [myPresence, currentUser?.id]);
 
   useEffect(() => {
     const checkEod = () => {
@@ -57,16 +101,31 @@ export const WarRoom = () => {
   }, [warRoomData?.hasSubmittedEod]);
 
   const addBlocker = useMutation({
-    mutationFn: (args: any) => fetch('/api/blockers', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenantId, authorId: currentUser?.id, ...args })
-    }).then(res => res.json()),
+    mutationFn: async (args: any) => {
+      const { error } = await supabase
+        .from('blockers')
+        .insert([{
+          tenant_id: tenantId,
+          author_id: currentUser?.id,
+          task: args.task,
+          blocker_text: args.blocker_text,
+          is_escalated: args.is_escalated
+        }]);
+      if (error) throw error;
+      return { success: true };
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['warRoom'] })
   });
 
   const resolveBlocker = useMutation({
-    mutationFn: (id: number) => fetch(`/api/blockers/${id}`, { method: 'DELETE' }).then(res => res.json()),
+    mutationFn: async (id: number) => {
+      const { error } = await supabase
+        .from('blockers')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    },
     onSuccess: () => {
       setActiveDropdown(null);
       queryClient.invalidateQueries({ queryKey: ['warRoom'] });
@@ -75,11 +134,17 @@ export const WarRoom = () => {
   });
 
   const submitEod = useMutation({
-    mutationFn: (report_text: string) => fetch('/api/eod', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenantId, authorId: currentUser?.id, report_text })
-    }).then(res => res.json()),
+    mutationFn: async (report_text: string) => {
+      const { error } = await supabase
+        .from('eod_reports')
+        .insert([{
+          tenant_id: tenantId,
+          author_id: currentUser?.id,
+          report_text: report_text
+        }]);
+      if (error) throw error;
+      return { success: true };
+    },
     onSuccess: (_, variables) => {
       setEodStatus('submitted');
       addNotification('SUCCESS', 'EOD report submitted! Great work today.');

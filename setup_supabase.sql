@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS public.tenants (
     primary_color TEXT,
     custom_labels TEXT,
     persona TEXT DEFAULT 'Tech Startup',
+    north_star_title TEXT DEFAULT 'Define your ultimate objective',
+    north_star_description TEXT DEFAULT 'The North Star Metric is the single key performance indicator that best captures the core value your product delivers to customers.',
+    north_star_milestones JSONB DEFAULT '[]',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -83,6 +86,36 @@ CREATE TABLE IF NOT EXISTS public.custom_widgets (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS public.social_posts (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    tenant_id BIGINT,
+    author_id BIGINT REFERENCES public.users(id),
+    author_name TEXT NOT NULL,
+    author_role TEXT,
+    content TEXT NOT NULL,
+    likes INTEGER DEFAULT 0,
+    comments_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.blockers (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    tenant_id BIGINT,
+    author_id BIGINT REFERENCES public.users(id),
+    task TEXT NOT NULL,
+    blocker_text TEXT NOT NULL,
+    is_escalated BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.eod_reports (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    tenant_id BIGINT,
+    author_id BIGINT REFERENCES public.users(id),
+    report_text TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Enable Realtime for these tables
 -- Run these one by one in the Supabase SQL Editor
 -- ALTER PUBLICATION supabase_realtime ADD TABLE public.projects;
@@ -90,3 +123,6 @@ CREATE TABLE IF NOT EXISTS public.custom_widgets (
 -- ALTER PUBLICATION supabase_realtime ADD TABLE public.documents;
 -- ALTER PUBLICATION supabase_realtime ADD TABLE public.daily_goals;
 -- ALTER PUBLICATION supabase_realtime ADD TABLE public.custom_widgets;
+-- ALTER PUBLICATION supabase_realtime ADD TABLE public.social_posts;
+-- ALTER PUBLICATION supabase_realtime ADD TABLE public.blockers;
+-- ALTER PUBLICATION supabase_realtime ADD TABLE public.eod_reports;
