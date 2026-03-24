@@ -16,13 +16,12 @@ export const notificationService = {
     filters?: any[];
   }) => {
     try {
-      // NOTE: You need a OneSignal REST API Key for this to work.
-      // For now, we'll try a direct call, but it may require the Key.
+      // NOTE: Using the REST API Key provided by the user
       const response = await fetch('https://onesignal.com/api/v1/notifications', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json; charset=utf-8',
-          // 'Authorization': 'Basic YOUR_REST_API_KEY' // <--- Add your key here if testing locally
+          'Authorization': 'Basic os_v2_app_kdduuzafxbdj5b3wkjcjyurz7yrvcg7wjc4ujj5feenix3adt3ocpjf3b4zmqdl4jl5jbyneldgif7mbf32f37smfgu4w7riwe7c6iy'
         },
         body: JSON.stringify({
           app_id: ONESIGNAL_APP_ID,
