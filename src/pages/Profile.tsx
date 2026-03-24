@@ -106,6 +106,27 @@ export const Profile = () => {
     }
   };
 
+  const handleResetNotifications = async () => {
+    try {
+      // 1. Unsubscribe from OneSignal
+      await OneSignal.User.PushSubscription.optOut();
+      
+      // 2. Unregister all service workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+      }
+      
+      addNotification('SUCCESS', 'Notifications reset! Please refresh and Enroll again.');
+      setTimeout(() => window.location.reload(), 2000);
+    } catch (err) {
+      console.error('Failed to reset notifications', err);
+      addNotification('ERROR', 'Failed to reset. Try clearing browser cache.');
+    }
+  };
+
   const handleSave = () => {
     if (editName.trim()) {
       updateProfile.mutate({ name: editName, role: editRole });
