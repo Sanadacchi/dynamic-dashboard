@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useNotificationStore } from '../store/notificationStore';
 import { supabase } from '../lib/supabase';
+import { notificationService } from '../lib/notificationService';
 
 export const Profile = () => {
   const { currentUser, setCurrentUser, setTenantId } = useWorkspaceStore();
@@ -83,6 +84,25 @@ export const Profile = () => {
       }, 5000);
     } catch (err) {
       console.error('Failed to prompt for notifications', err);
+    }
+  };
+
+  const handleTestPush = async () => {
+    const id = OneSignal.User.PushSubscription.id;
+    if (!id) {
+      addNotification('ERROR', 'Please enroll in notifications first.');
+      return;
+    }
+
+    try {
+      await notificationService.sendNotification({
+        headings: { en: 'Test Ping 🚀' },
+        contents: { en: 'Your Grahamly notification system is active!' },
+        include_player_ids: [id]
+      });
+      addNotification('SUCCESS', 'Test notification triggered!');
+    } catch (err) {
+      addNotification('ERROR', 'Failed to trigger test. Check console for details.');
     }
   };
 
@@ -203,12 +223,21 @@ export const Profile = () => {
               Enable push notifications to stay updated on critical blockers and war room updates, even when the browser is closed.
             </p>
             
-            <button 
-              onClick={handlePromptNotifications}
-              className="w-full sm:w-auto px-6 py-3 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 border border-indigo-500/30 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2"
-            >
-              <Bell size={16} /> Enroll in Push Notifications
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button 
+                onClick={handlePromptNotifications}
+                className="px-6 py-3 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 border border-indigo-500/30 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2"
+              >
+                <Bell size={16} /> Enroll
+              </button>
+              
+              <button 
+                onClick={handleTestPush}
+                className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2"
+              >
+                Send Test Push
+              </button>
+            </div>
             <p className="text-[10px] text-zinc-600 mt-4 leading-relaxed">
               * iOS Users: Must "Add to Home Screen" first for push to work. Android & Desktop work natively.
             </p>

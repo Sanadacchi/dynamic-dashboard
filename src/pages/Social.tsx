@@ -4,6 +4,7 @@ import { useWorkspaceStore } from '../store/workspaceStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '../lib/supabase';
+import { notificationService } from '../lib/notificationService';
 
 export const Social = () => {
   const { currentTenantId, currentUser } = useWorkspaceStore();
@@ -32,7 +33,7 @@ export const Social = () => {
 
   const createPost = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('social_posts')
         .insert([{
           tenant_id: currentTenantId,
@@ -40,13 +41,23 @@ export const Social = () => {
           author_name: currentUser?.name || 'Unknown',
           author_role: currentUser?.role || 'Team Member',
           content: content
-        }]);
+        }])
+        .select();
       if (error) throw error;
-      return { success: true };
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       setContent('');
       queryClient.invalidateQueries({ queryKey: ['socialPosts'] });
+      
+      if (data && data[0] && currentTenantId && currentUser) {
+        notificationService.notifyTeam(
+          currentTenantId,
+          currentUser.id,
+          'New Social Update 📢',
+          `${currentUser.name} just posted a new update.`
+        );
+      }
     }
   });
 

@@ -26,6 +26,10 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 - **Installable App**: Powered by `vite-plugin-pwa`, users can now "Add to Home Screen" on iOS/Android or "Install" on Desktop for an app-like experience.
 - **Push Delivery**: Integrated **OneSignal** (SDK v16) for cross-platform notifications.
 - **Explicit Opt-in**: Users can enroll in push notifications via the **User Profile** page, which syncs their unique subscription ID to the `users` table.
+- **Automated Triggers**: 
+  - **Socials**: Posting an update pings all team members.
+  - **War Room**: Adding a blocker pings the team for immediate attention.
+  - **Self-Test**: Users can send a "Test Push" from their profile to verify their device is linked.
 
 ### 4. Social Layer (Fixed)
 - **Tracked Likes**: Replaced simple counters with a `liked_by` array, enabling multi-user toggle (like/unlike) functionality.

@@ -13,6 +13,7 @@ import { useWorkspaceStore } from '../store/workspaceStore';
 import { useNotificationStore } from '../store/notificationStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { notificationService } from '../lib/notificationService';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
 
 export const WarRoom = () => {
@@ -79,16 +80,27 @@ export const WarRoom = () => {
 
   const addBlocker = useMutation({
     mutationFn: async (args: any) => {
-      const { error } = await supabase.from('blockers').insert([{
+      const { data, error } = await supabase.from('blockers').insert([{
         tenant_id: tenantId,
         author_id: currentUser?.id,
         task: args.task,
         blocker_text: args.blocker_text,
         is_escalated: args.is_escalated
-      }]);
+      }]).select();
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['war-room'] })
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['war-room'] });
+      if (data && data[0] && tenantId && currentUser) {
+        notificationService.notifyTeam(
+          tenantId,
+          currentUser.id,
+          '🚨 New Blocker Alert',
+          `${currentUser.name} added a blocker: ${data[0].blocker_text}`
+        );
+      }
+    }
   });
 
   const resolveBlocker = useMutation({
