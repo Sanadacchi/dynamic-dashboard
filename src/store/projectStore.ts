@@ -54,6 +54,8 @@ interface ProjectState {
   moveTask: (taskId: string, newStatus: TaskStatus, actorName: string) => Promise<void>;
   addComment: (taskId: string, authorId: number, authorName: string, text: string) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
+  deleteProject: (projectId: string) => Promise<void>;
+  updateProject: (projectId: string, updates: Partial<Project>) => Promise<void>;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 10);
@@ -246,6 +248,45 @@ export const useProjectStore = create<ProjectState>()(
 
         set((state) => ({
           tasks: state.tasks.filter((t) => t.id !== taskId),
+        }));
+      },
+
+      deleteProject: async (projectId) => {
+        // Supabase tasks should ideally have ON DELETE CASCADE on project_id
+        // But we'll filter local state too
+        const { error } = await supabase.from('projects').delete().eq('id', projectId);
+        if (error) {
+          console.error('Failed to delete project', error);
+          alert('Failed to delete project: ' + error.message);
+          return;
+        }
+
+        set((state) => ({
+          projects: state.projects.filter(p => p.id !== projectId),
+          tasks: state.tasks.filter(t => t.projectId !== projectId)
+        }));
+      },
+
+      updateProject: async (projectId, updates) => {
+        const { error } = await supabase
+          .from('projects')
+          .update({
+            title: updates.title,
+            description: updates.description,
+            color: updates.color
+          })
+          .eq('id', projectId);
+
+        if (error) {
+          console.error('Failed to update project', error);
+          alert('Failed to update project: ' + error.message);
+          return;
+        }
+
+        set((state) => ({
+          projects: state.projects.map(p => 
+            p.id === projectId ? { ...p, ...updates } : p
+          )
         }));
       },
     }),

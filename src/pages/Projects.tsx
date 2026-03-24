@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Briefcase, Plus, Layers, Clock, ChevronRight } from 'lucide-react';
+import { Briefcase, Plus, Layers, Clock, ChevronRight, Pencil, Trash2, X, Check } from 'lucide-react';
 import { useWorkspaceStore } from '../store/workspaceStore';
 import { useQuery } from '@tanstack/react-query';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
@@ -25,8 +25,11 @@ export const Projects = () => {
   useRealtimeSync();
   const { tenantId } = useParams<{ tenantId: string }>();
   const { currentTenantId } = useWorkspaceStore();
-  const { projects, tasks, addProject } = useProjectStore();
+  const { projects, tasks, addProject, deleteProject, updateProject } = useProjectStore();
   const [showAddProject, setShowAddProject] = useState(false);
+  const [editingProject, setEditingProject] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDesc, setEditDesc] = useState("");
 
   const { data: dashboardData } = useQuery({
     queryKey: ['dashboard', currentTenantId],
@@ -111,7 +114,37 @@ export const Projects = () => {
                     <div className={`w-2 h-2 rounded-full bg-${project.color}-500`} />
                     {vocab.projectLabel}
                   </div>
-                  <ChevronRight size={16} className="text-zinc-400 group-hover:text-indigo-500 group-hover:translate-x-0.5 transition-all" />
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setEditingProject(project.id);
+                          setEditTitle(project.title);
+                          setEditDesc(project.description || "");
+                        }}
+                        className="p-1.5 text-zinc-500 hover:text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-all"
+                        title="Edit Project"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (window.confirm(`Are you sure you want to delete "${project.title}"? All associated tasks will also be removed.`)) {
+                            deleteProject(project.id);
+                          }
+                        }}
+                        className="p-1.5 text-zinc-500 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all"
+                        title="Delete Project"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    <ChevronRight size={16} className="text-zinc-400 group-hover:text-indigo-500 group-hover:translate-x-0.5 transition-all" />
+                  </div>
                 </div>
 
                 <h3 className="font-bold text-zinc-900 dark:text-white mb-1">{project.title}</h3>
@@ -150,6 +183,69 @@ export const Projects = () => {
           onSave={(data) => addProject({ ...data, tenantId: currentTenantId! })}
           onClose={() => setShowAddProject(false)}
         />
+      )}
+
+      {/* Edit Project Modal */}
+      {editingProject && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#1C1C1C] border border-zinc-200 dark:border-zinc-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                <Pencil size={18} className="text-indigo-500" />
+                Edit {vocab.projectLabel}
+              </h3>
+              <button 
+                onClick={() => setEditingProject(null)}
+                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Title</label>
+                <input
+                  autoFocus
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white outline-none focus:border-indigo-500/50 transition-colors"
+                  placeholder="Project Title"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Description</label>
+                <textarea
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  className="w-full bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white outline-none focus:border-indigo-500/50 transition-colors min-h-[100px]"
+                  placeholder="Project Description"
+                />
+              </div>
+            </div>
+
+            <div className="p-6 bg-zinc-50 dark:bg-white/[0.02] flex items-center gap-3">
+              <button
+                onClick={() => setEditingProject(null)}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-zinc-500 hover:text-zinc-700 dark:hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (editTitle.trim()) {
+                    updateProject(editingProject, { title: editTitle, description: editDesc });
+                    setEditingProject(null);
+                  }
+                }}
+                className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2"
+              >
+                <Check size={16} /> Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

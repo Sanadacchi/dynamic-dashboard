@@ -23,9 +23,9 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 - `layoutStore.ts`: Controls sidebars, theme (Dark/Light), and mobile navigation state.
 - `northStarStore.ts`: Manages the strategic goal framework.
 
-### 3. UI/UX
-- **Responsive Design**: Mobile-safe layout with a dedicated iOS-style bottom nav and a hidden sidebar.
-- **Theme Engine**: Persists 'dark' or 'light' mode to the `<html>` element and LocalStorage.
+### 3. Project Management (New)
+- **Edit/Delete**: Project cards now support hover-triggered actions to change names/descriptions or permanently remove projects (and their tasks).
+- **Cascade Deletion**: Store logic ensures that deleting a project also cleans up its associated tasks from the local state.
 
 ## 🚀 Recent Accomplishments
 - **Total Synchronization**: Connected every dashboard card, persona panel, and War Room feed to live Supabase data.
