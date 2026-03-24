@@ -19,14 +19,25 @@ serve(async (req) => {
     const ONESIGNAL_APP_ID = Deno.env.get("ONESIGNAL_APP_ID");
     const ONESIGNAL_REST_API_KEY = Deno.env.get("ONESIGNAL_REST_API_KEY");
 
-    console.log("Secrets Status:", { 
-      appIdFound: !!ONESIGNAL_APP_ID, 
-      apiKeyFound: !!ONESIGNAL_REST_API_KEY 
+    console.log("Secrets Found:", { 
+      appId: ONESIGNAL_APP_ID ? "YES (first 4: " + ONESIGNAL_APP_ID.substring(0,4) + ")" : "NO",
+      apiKey: ONESIGNAL_REST_API_KEY ? "YES" : "NO" 
     });
 
     if (!ONESIGNAL_REST_API_KEY || !ONESIGNAL_APP_ID) {
-      throw new Error("ONESIGNAL_APP_ID or ONESIGNAL_REST_API_KEY is not set in Supabase Secrets");
+      throw new Error("Missing Secrets! Check Supabase > Settings > API > Secrets");
     }
+
+    const payload = {
+      app_id: ONESIGNAL_APP_ID,
+      headings,
+      contents,
+      include_player_ids,
+      filters,
+      chrome_web_icon: 'https://grahamly.netlify.app/pwa-192x192.png'
+    };
+
+    console.log("FINAL PAYLOAD TO ONESIGNAL:", JSON.stringify(payload));
 
     const response = await fetch('https://onesignal.com/api/v1/notifications', {
       method: 'POST',
@@ -34,14 +45,7 @@ serve(async (req) => {
         'Content-Type': 'application/json; charset=utf-8',
         'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`
       },
-      body: JSON.stringify({
-        app_id: ONESIGNAL_APP_ID,
-        headings,
-        contents,
-        include_player_ids,
-        filters,
-        chrome_web_icon: 'https://grahamly.netlify.app/pwa-192x192.png'
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = await response.json();
