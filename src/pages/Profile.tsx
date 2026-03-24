@@ -90,14 +90,21 @@ export const Profile = () => {
     return () => clearInterval(timer);
   }, []);
 
+  const BUILD_TIME = '2026-03-24 19:00'; // Manual stamp to check sync
+
   const handlePromptNotifications = async () => {
     try {
       addNotification('INFO', 'Requesting permission...');
       const result = await OneSignal.Notifications.requestPermission();
       console.log('Permission Result:', result);
       
-      // Explicitly Opt-In (Fixes the "Inactive" status seen in diagnostics)
+      // Explicitly Opt-In
       await OneSignal.User.PushSubscription.optIn();
+      
+      // Identify the user explicitly to force a sync
+      if (currentUser?.id) {
+        await OneSignal.login(currentUser.id.toString());
+      }
       
       // Wait for subscription to activate
       setTimeout(() => {
@@ -313,6 +320,12 @@ export const Profile = () => {
                 <span className="text-zinc-500">Opt-In Status</span>
                 <span className={subStatus.isOptedIn ? 'text-green-500' : 'text-rose-500'}>
                   {subStatus.isOptedIn ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-[10px] uppercase tracking-wider font-bold pt-2 border-t border-zinc-800/30">
+                <span className="text-zinc-600">Last Build Commit</span>
+                <span className="text-zinc-600 font-mono italic">
+                  v-19:00
                 </span>
               </div>
             </div>
