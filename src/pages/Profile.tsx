@@ -237,6 +237,13 @@ export const Profile = () => {
               >
                 Send Test Push
               </button>
+
+              <button 
+                onClick={handleResetNotifications}
+                className="px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2"
+              >
+                Reset Connection
+              </button>
             </div>
             <p className="text-[10px] text-zinc-600 mt-4 leading-relaxed">
               * iOS Users: Must "Add to Home Screen" first for push to work. Android & Desktop work natively.
