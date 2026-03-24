@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { UserCircle, Mail, Briefcase, MapPin, Trash2, Edit2, Check, X } from 'lucide-react';
+import { UserCircle, Mail, Briefcase, MapPin, Trash2, Edit2, Check, X, Bell } from 'lucide-react';
+import OneSignal from 'react-onesignal';
 import { useWorkspaceStore } from '../store/workspaceStore';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -53,6 +54,37 @@ export const Profile = () => {
       }
     }
   });
+
+  const syncSubscription = useMutation({
+    mutationFn: async (subscriptionId: string) => {
+      if (!currentUser?.id) return;
+      const { error } = await supabase
+        .from('users')
+        .update({ onesignal_id: subscriptionId })
+        .eq('id', currentUser.id);
+      if (error) throw error;
+      return { success: true };
+    },
+    onSuccess: () => {
+      addNotification('SUCCESS', 'Notification preferences synced.');
+    }
+  });
+
+  const handlePromptNotifications = async () => {
+    try {
+      await OneSignal.Slidedown.promptPush();
+      
+      // Wait a bit for the subscription to finalize
+      setTimeout(() => {
+        const id = OneSignal.User.PushSubscription.id;
+        if (id) {
+          syncSubscription.mutate(id);
+        }
+      }, 5000);
+    } catch (err) {
+      console.error('Failed to prompt for notifications', err);
+    }
+  };
 
   const handleSave = () => {
     if (editName.trim()) {
@@ -161,6 +193,25 @@ export const Profile = () => {
                 Remote
               </div>
             </div>
+          </div>
+          
+          <div className="pt-8 mt-8 border-t border-zinc-200 dark:border-zinc-800">
+            <h4 className="text-zinc-900 dark:text-white font-bold mb-2 flex items-center gap-2">
+              <Bell size={18} className="text-zinc-500" /> Notifications
+            </h4>
+            <p className="text-sm text-zinc-500 mb-6">
+              Enable push notifications to stay updated on critical blockers and war room updates, even when the browser is closed.
+            </p>
+            
+            <button 
+              onClick={handlePromptNotifications}
+              className="w-full sm:w-auto px-6 py-3 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 border border-indigo-500/30 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2"
+            >
+              <Bell size={16} /> Enroll in Push Notifications
+            </button>
+            <p className="text-[10px] text-zinc-600 mt-4 leading-relaxed">
+              * iOS Users: Must "Add to Home Screen" first for push to work. Android & Desktop work natively.
+            </p>
           </div>
           
           <div className="pt-8 mt-8 border-t border-zinc-200 dark:border-zinc-800">

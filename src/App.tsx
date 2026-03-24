@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import OneSignal from 'react-onesignal';
 import { useWorkspaceStore } from './store/workspaceStore';
+import { useEffect } from 'react';
 import { LoginScreen } from './components/LoginScreen';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { Overview } from './pages/Overview';
@@ -23,6 +25,16 @@ function SpaceFallback() {
 function AppContent() {
   const { currentTenantId, setCurrentUser } = useWorkspaceStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // OneSignal App ID from user
+    OneSignal.init({ 
+      appId: "50c74a64-05b8-469e-8776-52449c5239fe",
+      allowLocalhostAsSecureOrigin: true
+    }).then(() => {
+      console.log('OneSignal Initialized');
+    });
+  }, []);
 
   const handleLogin = (tenantId: number, userId: number, name: string) => {
     // Set the user object with the actual name provided

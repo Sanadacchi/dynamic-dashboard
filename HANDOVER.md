@@ -20,8 +20,12 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 
 ### 2. State Management: Zustand
 - `workspaceStore.ts`: Tracks `tenantId`, `currentTenant`, and global stats.
-- `layoutStore.ts`: Controls sidebars, theme (Dark/Light), and mobile navigation state.
-- `northStarStore.ts`: Manages the strategic goal framework.
+- `onesignal_id` (Users): Stores the notification subscription ID for targeted pings.
+
+### 5. PWA & Web Push Notifications (New)
+- **Installable App**: Powered by `vite-plugin-pwa`, users can now "Add to Home Screen" on iOS/Android or "Install" on Desktop for an app-like experience.
+- **Push Delivery**: Integrated **OneSignal** (SDK v16) for cross-platform notifications.
+- **Explicit Opt-in**: Users can enroll in push notifications via the **User Profile** page, which syncs their unique subscription ID to the `users` table.
 
 ### 4. Social Layer (Fixed)
 - **Tracked Likes**: Replaced simple counters with a `liked_by` array, enabling multi-user toggle (like/unlike) functionality.
