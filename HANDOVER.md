@@ -1,5 +1,8 @@
 # Grahamly Dashboard - Digital Handover Log
 
+> [!IMPORTANT]
+> **MANDATORY RULE FOR AI AGENTS**: Any change made to the codebase MUST be instantly recorded in this `HANDOVER.md` file. This is the source of truth for all architectural and feature updates.
+
 ## 🎯 Project State
 The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase Cloud Backend**. All core features are synchronized, persistent, and verified with a production build.
 
