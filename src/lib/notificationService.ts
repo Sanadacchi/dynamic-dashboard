@@ -16,28 +16,17 @@ export const notificationService = {
     filters?: any[];
   }) => {
     try {
-      // NOTE: Using the REST API Key provided by the user
-      const response = await fetch('https://onesignal.com/api/v1/notifications', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          'Authorization': 'Basic os_v2_app_kdduuzafxbdj5b3wkjcjyurz7yrvcg7wjc4ujj5feenix3adt3ocpjf3b4zmqdl4jl5jbyneldgif7mbf32f37smfgu4w7riwe7c6iy'
-        },
-        body: JSON.stringify({
-          app_id: ONESIGNAL_APP_ID,
-          headings: args.headings,
-          contents: args.contents,
-          include_player_ids: args.include_player_ids,
-          filters: args.filters,
-          chrome_web_icon: '/pwa-192x192.png'
-        }),
+      // Call the Supabase Edge Function instead of OneSignal directly
+      // This keeps your REST API Key secret on the server.
+      const { data, error } = await supabase.functions.invoke('send-notification', {
+        body: args
       });
 
-      const data = await response.json();
-      console.log('OneSignal Trigger Result:', data);
+      if (error) throw error;
+      console.log('Notification triggered:', data);
       return data;
     } catch (err) {
-      console.error('OneSignal Trigger Error:', err);
+      console.error('Notification Error:', err);
       throw err;
     }
   },
