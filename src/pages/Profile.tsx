@@ -96,12 +96,15 @@ export const Profile = () => {
       const result = await OneSignal.Notifications.requestPermission();
       console.log('Permission Result:', result);
       
+      // Explicitly Opt-In (Fixes the "Inactive" status seen in diagnostics)
+      await OneSignal.User.PushSubscription.optIn();
+      
       // Wait for subscription to activate
       setTimeout(() => {
         const id = OneSignal.User.PushSubscription.id;
         if (id) {
           syncSubscription.mutate(id);
-          addNotification('SUCCESS', 'Successfully enrolled!');
+          addNotification('SUCCESS', 'Successfully enrolled and opted-in!');
         } else {
           addNotification('WARNING', 'Permission granted, but no ID received yet.');
         }
