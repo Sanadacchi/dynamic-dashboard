@@ -71,19 +71,44 @@ export const Profile = () => {
     }
   });
 
+  const [subStatus, setSubStatus] = useState<{
+    permission: string;
+    id: string | null;
+    isOptedIn: boolean;
+  }>({ permission: 'loading', id: null, isOptedIn: false });
+
+  React.useEffect(() => {
+    const checkStatus = async () => {
+      setSubStatus({
+        permission: Notification.permission,
+        id: OneSignal.User.PushSubscription.id || null,
+        isOptedIn: OneSignal.User.PushSubscription.optedIn || false
+      });
+    };
+    checkStatus();
+    const timer = setInterval(checkStatus, 2000);
+    return () => clearInterval(timer);
+  }, []);
+
   const handlePromptNotifications = async () => {
     try {
-      await OneSignal.Slidedown.promptPush();
+      addNotification('INFO', 'Requesting permission...');
+      const result = await OneSignal.Notifications.requestPermission();
+      console.log('Permission Result:', result);
       
-      // Wait a bit for the subscription to finalize
+      // Wait for subscription to activate
       setTimeout(() => {
         const id = OneSignal.User.PushSubscription.id;
         if (id) {
           syncSubscription.mutate(id);
+          addNotification('SUCCESS', 'Successfully enrolled!');
+        } else {
+          addNotification('WARNING', 'Permission granted, but no ID received yet.');
         }
-      }, 5000);
+      }, 2000);
     } catch (err) {
       console.error('Failed to prompt for notifications', err);
+      addNotification('ERROR', 'Enrollment failed. Check browser settings.');
     }
   };
 
@@ -266,6 +291,29 @@ export const Profile = () => {
                 Reset Connection
               </button>
             </div>
+
+            {/* Diagnostic Status Area */}
+            <div className="mt-6 p-4 bg-black/20 rounded-2xl border border-zinc-800/50 space-y-2">
+              <div className="flex justify-between items-center text-[10px] uppercase tracking-wider font-bold">
+                <span className="text-zinc-500">Browser Permission</span>
+                <span className={subStatus.permission === 'granted' ? 'text-green-500' : 'text-rose-500'}>
+                  {subStatus.permission}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-[10px] uppercase tracking-wider font-bold">
+                <span className="text-zinc-500">Subscription ID</span>
+                <span className="text-zinc-300 font-mono truncate max-w-[150px]">
+                  {subStatus.id || 'None'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-[10px] uppercase tracking-wider font-bold">
+                <span className="text-zinc-500">Opt-In Status</span>
+                <span className={subStatus.isOptedIn ? 'text-green-500' : 'text-rose-500'}>
+                  {subStatus.isOptedIn ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+            </div>
+
             <p className="text-[10px] text-zinc-600 mt-4 leading-relaxed">
               * iOS Users: Must "Add to Home Screen" first for push to work. Android & Desktop work natively.
             </p>

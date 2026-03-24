@@ -14,12 +14,18 @@ serve(async (req) => {
 
   try {
     const { headings, contents, include_player_ids, filters } = await req.json();
+    console.log("Incoming Request Data:", { headings, contents, include_player_ids, filters });
 
     const ONESIGNAL_APP_ID = Deno.env.get("ONESIGNAL_APP_ID");
     const ONESIGNAL_REST_API_KEY = Deno.env.get("ONESIGNAL_REST_API_KEY");
 
-    if (!ONESIGNAL_REST_API_KEY) {
-      throw new Error("ONESIGNAL_REST_API_KEY is not set in Supabase Secrets");
+    console.log("Secrets Status:", { 
+      appIdFound: !!ONESIGNAL_APP_ID, 
+      apiKeyFound: !!ONESIGNAL_REST_API_KEY 
+    });
+
+    if (!ONESIGNAL_REST_API_KEY || !ONESIGNAL_APP_ID) {
+      throw new Error("ONESIGNAL_APP_ID or ONESIGNAL_REST_API_KEY is not set in Supabase Secrets");
     }
 
     const response = await fetch('https://onesignal.com/api/v1/notifications', {
@@ -39,6 +45,7 @@ serve(async (req) => {
     });
 
     const data = await response.json();
+    console.log("OneSignal Response Data:", data);
 
     return new Response(JSON.stringify(data), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
