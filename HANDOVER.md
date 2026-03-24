@@ -23,6 +23,10 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 - `layoutStore.ts`: Controls sidebars, theme (Dark/Light), and mobile navigation state.
 - `northStarStore.ts`: Manages the strategic goal framework.
 
+### 4. Social Layer (Fixed)
+- **Tracked Likes**: Replaced simple counters with a `liked_by` array, enabling multi-user toggle (like/unlike) functionality.
+- **Full Commenting**: Implemented a real-time comment system stored in the `social_posts` table (JSONB), with interactive UI for viewing and posting.
+
 ### 3. Project Management (New)
 - **Edit/Delete**: Project cards now support hover-triggered actions to change names/descriptions or permanently remove projects (and their tasks).
 - **Cascade Deletion**: Store logic ensures that deleting a project also cleans up its associated tasks from the local state.
