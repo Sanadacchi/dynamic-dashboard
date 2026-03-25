@@ -9,6 +9,7 @@ import {
   MoreHorizontal 
 } from 'lucide-react';
 import { format, isAfter, setHours, setMinutes, startOfToday } from 'date-fns';
+import { logActivity } from '../lib/activityLogger';
 import { useWorkspaceStore } from '../store/workspaceStore';
 import { useNotificationStore } from '../store/notificationStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -99,6 +100,7 @@ export const WarRoom = () => {
           '🚨 New Blocker Alert',
           `${currentUser.name} added a blocker: ${data[0].blocker_text}`
         );
+        logActivity(tenantId!, currentUser?.id, 'BLOCKER_ESCALATED');
       }
     }
   });
@@ -130,6 +132,7 @@ export const WarRoom = () => {
       addNotification('SUCCESS', 'EOD report submitted! Great work today.');
       addNotification('EOD_REPORT', `${currentUser?.name || 'A team member'} submitted their EOD`, { text: report_text });
       queryClient.invalidateQueries({ queryKey: ['war-room'] });
+      logActivity(tenantId!, currentUser?.id, 'EOD_SUBMITTED');
     }
   });
 

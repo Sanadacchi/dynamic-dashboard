@@ -17,6 +17,7 @@ import { useNotificationStore } from '../store/notificationStore';
 import { useWorkspaceStore } from '../store/workspaceStore';
 import { format } from 'date-fns';
 import { supabase } from '../lib/supabase';
+import { logActivity } from '../lib/activityLogger';
 
 interface FileItem {
   id: string;
@@ -84,7 +85,11 @@ export const Documents = () => {
     if (!currentTenantId || !currentUser) return;
     
     try {
-      addNotification('INFO', `Uploading ${file.name}...`);
+      try {
+        addNotification('INFO', `Uploading ${file.name}...`);
+      } catch (e) {
+        console.warn('Silent Notification Error:', e);
+      }
       
       // 1. Upload to Supabase Storage
       const fileExt = file.name.split('.').pop();
@@ -114,6 +119,8 @@ export const Documents = () => {
         });
 
       if (dbError) throw dbError;
+
+      logActivity(currentTenantId, currentUser.id, 'DOC_UPLOADED');
 
       addNotification('SUCCESS', 'Document stored securely in the cloud.');
       queryClient.invalidateQueries({ queryKey: ['documents'] });

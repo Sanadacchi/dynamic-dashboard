@@ -19,18 +19,38 @@ export const useWidgetData = (config: WidgetConfig) => {
     queryKey: ['widgetData', config.endpoint, currentTenantId],
     queryFn: async () => {
       if (config.endpoint === '/api/metrics/live') {
-        const { count, error } = await supabase
-          .from('tasks')
-          .select('*', { count: 'exact', head: true })
-          .eq('tenant_id', currentTenantId);
+        const windowMinutes = 6;
+        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
         
+        const { data: activities, error } = await supabase
+          .from('activity_log')
+          .select('points, created_at')
+          .eq('tenant_id', currentTenantId)
+          .gte('created_at', tenMinutesAgo);
+
+        if (error) {
+          console.error('Failed to fetch momentum data', error);
+          return [];
+        }
+
         const now = new Date();
         const pts = [];
-        for(let i=5; i>=0; i--) {
-           const timePoint = new Date(now.getTime() - i * 60000);
+        
+        for(let i=windowMinutes-1; i>=0; i--) {
+           const windowStart = new Date(now.getTime() - (i + 1) * 60000);
+           const windowEnd = new Date(now.getTime() - i * 60000);
+           
+           const minutePoints = (activities || []).reduce((sum, act) => {
+             const d = new Date(act.created_at);
+             if (d >= windowStart && d < windowEnd) {
+               return sum + (act.points || 0);
+             }
+             return sum;
+           }, 0);
+
            pts.push({
-             label: `${timePoint.getHours()}:${String(timePoint.getMinutes()).padStart(2,'0')}`,
-             value: (count || 0) + Math.floor(Math.random() * 5) // Slight variance for "live" feel
+             label: `${windowEnd.getHours()}:${String(windowEnd.getMinutes()).padStart(2,'0')}`,
+             value: minutePoints
            });
         }
         return pts;

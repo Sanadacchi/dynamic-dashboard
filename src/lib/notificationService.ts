@@ -26,8 +26,9 @@ export const notificationService = {
       console.log('Notification triggered:', data);
       return data;
     } catch (err) {
-      console.error('Notification Error:', err);
-      throw err;
+      console.warn('Notification Service (Non-critical) failed:', err);
+      // Do not re-throw; we don't want a notification failure to crash the app logic
+      return { error: err };
     }
   },
 

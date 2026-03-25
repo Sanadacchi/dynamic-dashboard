@@ -46,7 +46,8 @@ db.exec(`
     title TEXT NOT NULL,
     status TEXT DEFAULT 'Planned',
     is_blocked INTEGER DEFAULT 0,
-    created_at DATE DEFAULT (DATE('now')),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME,
     FOREIGN KEY(tenant_id) REFERENCES tenants(id),
     FOREIGN KEY(project_id) REFERENCES projects(id),
     FOREIGN KEY(user_id) REFERENCES users(id)
@@ -150,6 +151,17 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(tenant_id) REFERENCES tenants(id),
     FOREIGN KEY(author_id) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS activity_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id INTEGER,
+    user_id INTEGER,
+    action_type TEXT,
+    points INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(tenant_id) REFERENCES tenants(id),
+    FOREIGN KEY(user_id) REFERENCES users(id)
   );
 `);
 
@@ -368,7 +380,7 @@ async function startServer() {
 
   app.post("/api/tasks/complete", (req, res) => {
     const { taskId } = req.body;
-    db.prepare("UPDATE tasks SET status = 'Completed' WHERE id = ?").run(taskId);
+    db.prepare("UPDATE tasks SET status = 'Completed', completed_at = CURRENT_TIMESTAMP WHERE id = ?").run(taskId);
     res.json({ success: true });
   });
 

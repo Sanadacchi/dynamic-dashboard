@@ -38,6 +38,13 @@ Welcome to the Grahamly Dashboard Development Team. This specialized team of AI 
     - Runs automated tests and performs manual bug hunting.
     - Validates that features meet the original requirements.
 
+## 📊 Vector | Data Scientist & Analyst
+- **Role**: Metrics & Insights.
+- **Responsibilities**:
+    - Defines KPIs and data models for tracking progress.
+    - Implements complex analytics and visualization logic.
+    - Ensures "Recent Project Activity" reflects real-world impact.
+
 ## 🛡️ Sentinel | Deployment Watchdog
 - **Role**: CI/CD & GitHub Guardian.
 - **Responsibilities**:

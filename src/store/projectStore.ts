@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
+import { logActivity } from '../lib/activityLogger';
 
 export type Priority = 'Low' | 'Medium' | 'High' | 'Critical';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done';
@@ -50,8 +51,8 @@ interface ProjectState {
   isLoading: boolean;
   fetchData: (tenantId: number) => Promise<void>;
   addProject: (project: Omit<Project, 'id' | 'createdAt'>) => Promise<string | null>;
-  addTask: (task: Omit<Task, 'id' | 'comments' | 'activity' | 'createdAt'>) => Promise<void>;
-  moveTask: (taskId: string, newStatus: TaskStatus, actorName: string) => Promise<void>;
+  addTask: (task: Omit<Task, 'id' | 'comments' | 'activity' | 'createdAt'>, actorId?: number | null) => Promise<void>;
+  moveTask: (taskId: string, newStatus: TaskStatus, actorName: string, actorId?: number | null) => Promise<void>;
   addComment: (taskId: string, authorId: number, authorName: string, text: string) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
@@ -139,7 +140,7 @@ export const useProjectStore = create<ProjectState>()(
         return newProject.id;
       },
 
-      addTask: async (task) => {
+      addTask: async (task, actorId) => {
         const activity = [{ id: generateId(), text: 'Task created', timestamp: new Date().toISOString() }];
         const { data, error } = await supabase
           .from('tasks')
@@ -164,6 +165,9 @@ export const useProjectStore = create<ProjectState>()(
           return;
         }
 
+        // Log Activity
+        logActivity(task.tenantId, actorId || undefined, 'TASK_CREATED');
+
         const newTask = {
           id: data.id,
           projectId: data.project_id,
@@ -181,7 +185,7 @@ export const useProjectStore = create<ProjectState>()(
         set((state) => ({ tasks: [...state.tasks, newTask] }));
       },
 
-      moveTask: async (taskId, newStatus, actorName) => {
+      moveTask: async (taskId, newStatus, actorName, actorId) => {
         const state = get();
         const task = state.tasks.find(t => t.id === taskId);
         if (!task) return;
@@ -204,6 +208,10 @@ export const useProjectStore = create<ProjectState>()(
           console.error('Failed to move task', error);
           return;
         }
+
+        // Log Activity
+        const actionType = newStatus === 'done' ? 'TASK_DONE' : 'TASK_MOVED';
+        logActivity(task.tenantId, actorId || undefined, actionType);
 
         set((state) => ({
           tasks: state.tasks.map((t) =>

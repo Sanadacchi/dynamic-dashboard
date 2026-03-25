@@ -28,13 +28,23 @@ function AppContent() {
 
   useEffect(() => {
     // OneSignal App ID from user
-    OneSignal.init({ 
-      appId: "50c74a64-05b8-469e-8776-52449c5239fe",
-      allowLocalhostAsSecureOrigin: true,
-      serviceWorkerPath: 'sw.js' // Use the PWA's worker
-    }).then(() => {
-      console.log('OneSignal Initialized');
-    });
+    const initOneSignal = async () => {
+      try {
+        // Prevent double init if already active
+        if ((OneSignal as any).initialized) return;
+
+        await OneSignal.init({ 
+          appId: "50c74a64-05b8-469e-8776-52449c5239fe",
+          allowLocalhostAsSecureOrigin: true,
+          serviceWorkerPath: 'sw.js'
+        });
+        (OneSignal as any).initialized = true;
+        console.log('OneSignal Initialized');
+      } catch (err) {
+        console.warn('OneSignal Init (Safe Catch):', err);
+      }
+    };
+    initOneSignal();
   }, []);
 
   const handleLogin = async (tenantId: number, userId: number, name: string) => {

@@ -4,6 +4,7 @@ import { useWorkspaceStore } from '../store/workspaceStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '../lib/supabase';
+import { logActivity } from '../lib/activityLogger';
 import { notificationService } from '../lib/notificationService';
 
 export const Social = () => {
@@ -57,6 +58,7 @@ export const Social = () => {
           'New Social Update 📢',
           `${currentUser.name} just posted a new update.`
         );
+        logActivity(currentTenantId, currentUser.id, 'SOCIAL_POST');
       }
     }
   });
@@ -88,6 +90,7 @@ export const Social = () => {
         })
         .eq('id', postId);
       if (updateError) throw updateError;
+      logActivity(currentTenantId!, currentUser?.id, 'SOCIAL_LIKE');
       return { success: true };
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['socialPosts'] })
@@ -119,6 +122,7 @@ export const Social = () => {
         })
         .eq('id', args.postId);
       if (updateError) throw updateError;
+      logActivity(currentTenantId!, currentUser?.id, 'SOCIAL_COMMENT');
       return { success: true };
     },
     onSuccess: (_, variables) => {
