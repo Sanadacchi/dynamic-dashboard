@@ -191,64 +191,115 @@ export const Documents = () => {
           </div>
         </div>
 
-        <table className="w-full text-left">
-          <thead>
-            <tr className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-800">
-              <th className="px-6 py-4">File Name</th>
-              <th className="px-6 py-4">Uploaded By</th>
-              <th className="px-6 py-4">Date</th>
-              <th className="px-6 py-4">Size</th>
-              <th className="px-6 py-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-800/50">
-            {files.map((file) => (
-              <tr key={file.id} className="group hover:bg-white/[0.02] transition-colors">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
-                      {getFileIcon(file.type)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-white">{file.name}</p>
-                      {file.progress !== undefined && (
-                        <div className="w-32 h-1 bg-white/10 rounded-full mt-2 overflow-hidden">
-                          <div 
-                            className="h-full bg-emerald-500 transition-all duration-300" 
-                            style={{ width: `${file.progress}%` }} 
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-xs text-zinc-400">{file.uploader_name}</td>
-                <td className="px-6 py-4 text-xs text-zinc-400">
-                  {file.created_at ? format(new Date(file.created_at), 'MMM d, yyyy') : 'Recently'}
-                </td>
-                <td className="px-6 py-4 text-xs text-zinc-400">{(file.size / 1024 / 1024).toFixed(2)} MB</td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <a href={file.url} download={file.name} className="p-2 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-white transition-colors">
-                      <Download size={16} />
-                    </a>
-                    {file.uploaded_by == currentUser?.id && (
-                      <button 
-                        onClick={() => { if(window.confirm('Delete this document?')) deleteDocument.mutate(file); }}
-                        className="p-2 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-rose-500 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                    <button className="p-2 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-white transition-colors">
-                      <MoreHorizontal size={16} />
-                    </button>
-                  </div>
-                </td>
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-800">
+                <th className="px-6 py-4">File Name</th>
+                <th className="px-6 py-4">Uploaded By</th>
+                <th className="px-6 py-4">Date</th>
+                <th className="px-6 py-4">Size</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-zinc-800/50">
+              {files.map((file) => (
+                <tr key={file.id} className="group hover:bg-white/[0.02] transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                        {getFileIcon(file.type)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-white">{file.name}</p>
+                        {file.progress !== undefined && (
+                          <div className="w-32 h-1 bg-white/10 rounded-full mt-2 overflow-hidden">
+                            <div 
+                              className="h-full bg-emerald-500 transition-all duration-300" 
+                              style={{ width: `${file.progress}%` }} 
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-xs text-zinc-400">{file.uploader_name}</td>
+                  <td className="px-6 py-4 text-xs text-zinc-400">
+                    {file.created_at ? format(new Date(file.created_at), 'MMM d, yyyy') : 'Recently'}
+                  </td>
+                  <td className="px-6 py-4 text-xs text-zinc-400">{(file.size / 1024 / 1024).toFixed(2)} MB</td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <a href={file.url} download={file.name} className="p-2 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-white transition-colors">
+                        <Download size={16} />
+                      </a>
+                      {file.uploaded_by == currentUser?.id && (
+                        <button 
+                          onClick={() => { if(window.confirm('Delete this document?')) deleteDocument.mutate(file); }}
+                          className="p-2 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-rose-500 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                      <button className="p-2 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-white transition-colors">
+                        <MoreHorizontal size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile List View */}
+        <div className="md:hidden divide-y divide-zinc-800/50">
+          {files.map((file) => (
+            <div key={file.id} className="p-4 space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                    {getFileIcon(file.type)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-white truncate break-all max-w-[200px]">{file.name}</p>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">
+                      {file.uploader_name} • {file.created_at ? format(new Date(file.created_at), 'MMM d, yyyy') : 'Recently'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <a href={file.url} download={file.name} className="p-2 bg-white/5 rounded-lg text-zinc-400 hover:text-white">
+                    <Download size={18} />
+                  </a>
+                  {file.uploaded_by == currentUser?.id && (
+                    <button 
+                      onClick={() => { if(window.confirm('Delete this document?')) deleteDocument.mutate(file); }}
+                      className="p-2 bg-white/5 rounded-lg text-zinc-400 hover:text-rose-500"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+                </div>
+              </div>
+              {file.progress !== undefined && (
+                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-emerald-500 transition-all duration-300" 
+                    style={{ width: `${file.progress}%` }} 
+                  />
+                </div>
+              )}
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-[10px] text-zinc-500 uppercase tracking-wider">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                <button className="text-[10px] text-zinc-400 font-bold hover:text-white flex items-center gap-1">
+                  DETAILS <MoreHorizontal size={12} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
