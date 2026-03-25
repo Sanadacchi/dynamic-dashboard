@@ -22,14 +22,14 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 - `workspaceStore.ts`: Tracks `tenantId`, `currentTenant`, and global stats.
 - `onesignal_id` (Users): Stores the notification subscription ID for targeted pings.
 
-### 5. PWA & Web Push Notifications (New)
-- **Installable App**: Powered by `vite-plugin-pwa`, users can now "Add to Home Screen" on iOS/Android or "Install" on Desktop for an app-like experience.
-- **Push Delivery**: Integrated **OneSignal** (SDK v16) for cross-platform notifications.
-- **Explicit Opt-in**: Users can enroll in push notifications via the **User Profile** page, which syncs their unique subscription ID to the `users` table.
-- **Automated Triggers**: 
-  - **Socials**: Posting an update pings all team members.
-  - **War Room**: Adding a blocker pings the team for immediate attention.
-  - **Self-Test**: Users can send a "Test Push" from their profile to verify their device is linked.
+### 5. PWA & Push Notifications (Partial Implementation)
+- **PWA Status**: Fully functional via `vite-plugin-pwa`. The app is installable on Android/iOS/Desktop.
+- **Push Notification Status**: Currently **INACTIVE/UNSTABLE**.
+- **The Blockers**:
+  1. **SW Registration Conflicts**: Competitive ownership of `sw.js` between Vite PWA and OneSignal. Even with `importScripts`, messaging synchronization fails with `No SW registration for postMessage`.
+  2. **Supabase Gateway 401s**: Edge Functions require `Verify JWT with legacy secret` to be turned OFF to allow frontend calls without full Auth. This setting is unstable and prone to resets.
+  3. **OneSignal v16 Payload**: Consistent "Missing app_id" errors despite explicit inclusion in Edge Function payloads, suggesting environment variable injection failures in the Deno environment.
+- **Decision**: Pushed to a lower priority to preserve core dashboard stability.
 
 ### 4. Social Layer (Fixed)
 - **Tracked Likes**: Replaced simple counters with a `liked_by` array, enabling multi-user toggle (like/unlike) functionality.
