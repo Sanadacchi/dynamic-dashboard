@@ -19,16 +19,17 @@ export const useWidgetData = (config: WidgetConfig) => {
     queryKey: ['widgetData', config.endpoint, currentTenantId],
     queryFn: async () => {
       if (config.endpoint === '/api/metrics/live') {
-        const { data: count, error } = await supabase
+        const { count, error } = await supabase
           .from('tasks')
-          .select('id', { count: 'exact', head: true })
+          .select('*', { count: 'exact', head: true })
           .eq('tenant_id', currentTenantId);
         
         const now = new Date();
         const pts = [];
         for(let i=5; i>=0; i--) {
+           const timePoint = new Date(now.getTime() - i * 60000);
            pts.push({
-             label: `${now.getHours()}:${String(now.getMinutes()-i).padStart(2,'0')}`,
+             label: `${timePoint.getHours()}:${String(timePoint.getMinutes()).padStart(2,'0')}`,
              value: (count || 0) + Math.floor(Math.random() * 5) // Slight variance for "live" feel
            });
         }
