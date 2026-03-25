@@ -22,14 +22,13 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 - `workspaceStore.ts`: Tracks `tenantId`, `currentTenant`, and global stats.
 - `onesignal_id` (Users): Stores the notification subscription ID for targeted pings.
 
-### 5. PWA & Push Notifications (Partial Implementation)
+### 5. PWA & Push Notifications (In Progress / Configuration Needed)
 - **PWA Status**: Fully functional via `vite-plugin-pwa`. The app is installable on Android/iOS/Desktop.
-- **Push Notification Status**: Currently **INACTIVE/UNSTABLE**.
-- **The Blockers**:
-  1. **SW Registration Conflicts**: Competitive ownership of `sw.js` between Vite PWA and OneSignal. Even with `importScripts`, messaging synchronization fails with `No SW registration for postMessage`.
-  2. **Supabase Gateway 401s**: Edge Functions require `Verify JWT with legacy secret` to be turned OFF to allow frontend calls without full Auth. This setting is unstable and prone to resets.
-  3. **OneSignal v16 Payload**: Consistent "Missing app_id" errors despite explicit inclusion in Edge Function payloads, suggesting environment variable injection failures in the Deno environment.
-- **Decision**: Pushed to a lower priority to preserve core dashboard stability.
+- **Push Notification Status**: **Device Enrollment is ACTIVE**, but the trigger mechanism (Edge Function proxy) is currently failing due to AI-driven configuration errors.
+- **The Core Issue**: 
+  - **Successful**: Devices are successfully identified, prompts are shown, and subscriptions appear as **ACTIVE** in the OneSignal dashboard.
+  - **Failing**: The Supabase Edge Function (`send-notification`) fails to correctly pass the `app_id` to OneSignal, likely due to a mismatch in how Secrets are injected or parsed in the Deno environment.
+- **Recommendation**: Ensure the `ONESIGNAL_APP_ID` secret is perfectly synced between the Supabase Dashboard and the Edge Function runtime.
 
 ### 4. Social Layer (Fixed)
 - **Tracked Likes**: Replaced simple counters with a `liked_by` array, enabling multi-user toggle (like/unlike) functionality.
