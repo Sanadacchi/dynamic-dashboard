@@ -99,7 +99,6 @@ export const Profile = () => {
 
   const handlePromptNotifications = async () => {
     try {
-      addNotification('INFO', 'Requesting permission...');
       const result = await OneSignal.Notifications.requestPermission();
       console.log('Permission Result:', result);
       

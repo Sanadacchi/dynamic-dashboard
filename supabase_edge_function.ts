@@ -31,7 +31,8 @@ serve(async (req) => {
       app_id: ONESIGNAL_APP_ID,
       headings,
       contents,
-      include_player_ids,
+      include_player_ids: include_player_ids || [],
+      include_subscription_ids: include_player_ids || [], // Map both for safety
       filters,
       chrome_web_icon: 'https://grahamly.netlify.app/pwa-192x192.png'
     };
@@ -50,9 +51,20 @@ serve(async (req) => {
     const data = await response.json();
     console.log("OneSignal Response Data:", data);
 
+    if (!response.ok) {
+        console.error("OneSignal Error Report:", JSON.stringify(data));
+        return new Response(JSON.stringify({ 
+            error: data.errors?.[0] || response.statusText,
+            details: data 
+        }), {
+            headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+            status: response.status,
+        });
+    }
+
     return new Response(JSON.stringify(data), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-      status: response.status,
+      status: 200,
     });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {

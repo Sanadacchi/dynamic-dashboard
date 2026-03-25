@@ -31,7 +31,7 @@ function AppContent() {
     OneSignal.init({ 
       appId: "50c74a64-05b8-469e-8776-52449c5239fe",
       allowLocalhostAsSecureOrigin: true,
-      serviceWorkerPath: 'OneSignalSDKWorker.js' // Use the OneSignal worker
+      serviceWorkerPath: 'sw.js' // Use the PWA's worker
     }).then(() => {
       console.log('OneSignal Initialized');
     });
