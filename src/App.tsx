@@ -37,9 +37,17 @@ function AppContent() {
     });
   }, []);
 
-  const handleLogin = (tenantId: number, userId: number, name: string) => {
+  const handleLogin = async (tenantId: number, userId: number, name: string) => {
     // Set the user object with the actual name provided
     setCurrentUser({ id: userId, name: name, role: 'ADMIN' });
+    
+    // OneSignal User Mapping
+    try {
+      await OneSignal.login(userId.toString());
+    } catch (err) {
+      console.error('OneSignal Login Error:', err);
+    }
+
     // Use navigate instead of window.location.href to preserve Zustand store state
     navigate(`/space/${tenantId}/overview`);
   };

@@ -49,6 +49,11 @@ export const Profile = () => {
       if (data.success) {
         addNotification('SUCCESS', 'Account deleted successfully.');
         // Log user out
+        try {
+          OneSignal.logout();
+        } catch (err) {
+          console.error('OneSignal Logout Error:', err);
+        }
         setCurrentUser(null);
         setTenantId(null);
         navigate('/');

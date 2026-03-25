@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import OneSignal from 'react-onesignal';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Target, 
@@ -28,7 +29,12 @@ export const Overview = () => {
   const taskVelocityData = useWidgetData({ sourceType: 'MANUAL', manualDataKey: 'taskVelocity' });
   const apiRequestsData = useWidgetData({ sourceType: 'API', endpoint: '/api/metrics/live', refetchInterval: 5000 });
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await OneSignal.logout();
+    } catch (err) {
+      console.error('OneSignal Logout Error:', err);
+    }
     setCurrentUser(null);
     setTenantId(null);
     navigate('/');
