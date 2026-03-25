@@ -4,7 +4,7 @@
 > **MANDATORY RULE FOR AI AGENTS**: Any change made to the codebase MUST be instantly recorded in this `HANDOVER.md` file. This is the source of truth for all architectural and feature updates.
 
 ## 🎯 Project State
-The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase Cloud Backend**. All core features are synchronized, persistent, and verified with a production build.
+The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase Cloud Backend**. All core features are synchronized, persistent, and verified with a production build. OneSignal push notifications are now fully operational in both development and production environments.
 
 ## 🏗 Technical Architecture
 
@@ -22,13 +22,14 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 - `workspaceStore.ts`: Tracks `tenantId`, `currentTenant`, and global stats.
 - `onesignal_id` (Users): Stores the notification subscription ID for targeted pings.
 
-### 5. PWA & Push Notifications (In Progress / Configuration Needed)
+### 5. PWA & Push Notifications (Fixed & Configured)
 - **PWA Status**: Fully functional via `vite-plugin-pwa`. The app is installable on Android/iOS/Desktop.
-- **Push Notification Status**: **Device Enrollment is ACTIVE**, but the trigger mechanism (Edge Function proxy) is currently failing due to AI-driven configuration errors.
-- **The Core Issue**: 
-  - **Successful**: Devices are successfully identified, prompts are shown, and subscriptions appear as **ACTIVE** in the OneSignal dashboard.
-  - **Failing**: The Supabase Edge Function (`send-notification`) fails to correctly pass the `app_id` to OneSignal, likely due to a mismatch in how Secrets are injected or parsed in the Deno environment.
-- **Recommendation**: Ensure the `ONESIGNAL_APP_ID` secret is perfectly synced between the Supabase Dashboard and the Edge Function runtime.
+- **Push Notification Status**: **FIXED**. Device enrollment and trigger mechanisms are active.
+- **Key Fixes**: 
+  - **PWA Dev Mode**: Enabled `devOptions` in `vite.config.ts` to ensure `sw.js` is served during development.
+  - **Service Worker Sync**: OneSignal now uses `sw.js`, which imports the OneSignal SDK, ensuring a single, unified worker registration.
+  - **User Mapping**: Implemented `OneSignal.login(user.id)` and `OneSignal.logout()` in auth flows to enable targeted notifications via `external_id`.
+  - **Edge Function Robustness**: Improved the `send-notification` function with better error reporting and support for both `include_player_ids` and `include_subscription_ids`.
 
 ### 4. Social Layer (Fixed)
 - **Tracked Likes**: Replaced simple counters with a `liked_by` array, enabling multi-user toggle (like/unlike) functionality.
@@ -39,6 +40,8 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 - **Cascade Deletion**: Store logic ensures that deleting a project also cleans up its associated tasks from the local state.
 
 ## 🚀 Recent Accomplishments
+- **Dashboard Data Fixes**: Resolved bugs in `useWidgetData.ts` affecting Supabase count retrieval and time label calculations for live charts.
+- **OneSignal Restoration**: Successfully debugged and restored the push notification system, including service worker registration and edge function payload mapping.
 - **Total Synchronization**: Connected every dashboard card, persona panel, and War Room feed to live Supabase data.
 - **EOD & North Star Fixes**: Resolved critical schema mismatches (missing `date` and `north_star_chart_data` columns) via SQL migration.
 - **Mobile Polish**: Added the theme toggle to the mobile menu for full accessibility.
@@ -49,4 +52,4 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 - **Collaboration**: Real-time presence and typing indicators in the War Room.
 
 ---
-*Created by Antigravity AI on 2026-03-23. The project is production-ready and cloud-synchronized.*
+*Updated by Antigravity AI on 2026-03-25. The project is production-ready, cloud-synchronized, and push-enabled.*
