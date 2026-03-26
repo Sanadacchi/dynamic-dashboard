@@ -52,5 +52,8 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 - **Task Analytics**: The `completed_at` column in `tasks` is ready for advanced velocity chart implementation.
 - **Collaboration**: Real-time presence and typing indicators in the War Room.
 
+- **Mobile Usability Overhaul**: Fully refactored the navigation for mobile devices. Added the "Projects" module to both the bottom navigation bar and the hamburger menu.
+- **Touch-Optimized Kanban**: Integrated `TouchSensor` with a 250ms hold-to-drag delay and implemented permanently visible drag handles for mobile, ensuring the project board is fully functional on touch devices.
+
 ---
-*Updated by Solace (Team Lead) on 2026-03-25. Verified mobile accessibility for the Documents module.*
+*Updated by Solace (Team Lead) on 2026-03-26. Projects module and touch-optimized drag-and-drop are now live on mobile.*
