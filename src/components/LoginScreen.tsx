@@ -366,7 +366,7 @@ export const LoginScreen = ({ onLogin }: { onLogin: (tenantId: number, userId: n
 
       {/* Floating User Guide Link */}
       <a 
-        href="/Dashboard-userguide.pdf" 
+        href="https://hucpcyfbjsbvrjcnocil.supabase.co/storage/v1/object/public/public-assets/Dashboard-userguide.pdf" 
         target="_blank" 
         rel="noopener noreferrer"
         className="fixed bottom-8 left-8 flex items-center gap-2.5 px-4 py-2.5 bg-white/5 border border-zinc-800 hover:border-zinc-600 backdrop-blur-md rounded-2xl text-zinc-400 hover:text-white transition-all group z-[100]"
