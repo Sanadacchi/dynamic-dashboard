@@ -49,7 +49,7 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 - **Edge Function Modernization**: Migrated the `send-notification` function to use `Deno.serve` and restructured it to `supabase/functions/send-notification/index.ts`. Optimized for OneSignal's newest subscription API.
 - **ESM & Windows Fixes**: Resolved the `ERR_INVALID_URL_SCHEME` in `server.ts` by correctly defining `__dirname` for ESM on Windows.
 - **Sticky Timeframe**: Persisted the Task Velocity timeframe (Weekly/Monthly) in the `workspaceStore` to ensure it remains active after a page refresh.
-- **User Guide Integration**: Added a floating, glassmorphic "User Guide" link to the login screen and moved the PDF to `public/` for reliable static serving.
+- **User Guide Integration**: Added a floating, glassmorphic "User Guide" link to the login screen. Transitions from a local asset to a permanent **Supabase Storage** URL for reliable global access on the live site.
 
 ## 🔮 Future Roadmap (Next Steps)
 - **RLS Enablement**: Enable Supabase Row Level Security once user authentication (Auth) is fully integrated.
@@ -63,4 +63,4 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 - **Enhanced Modal Logic**: Verified that `EditPanelModal` correctly saves and retrieves localized manual entries for all overview cards.
 
 ---
-*Updated by Solace (Team Lead) on 2026-03-26. Edge Function modernized, ESM fixes applied, Sticky Timeframe implemented, and User Guide integrated.*
+*Updated by Solace (Team Lead) on 2026-03-26. Edge Function modernized, ESM fixes applied, Sticky Timeframe implemented, and User Guide integrated via Supabase Storage.*
