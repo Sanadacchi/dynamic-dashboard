@@ -8,6 +8,7 @@ interface WorkspaceState {
   taskVelocityMonthly: { label: string; current: number; previous: number }[];
   taskVelocityWeekly: { label: string; current: number; previous: number }[];
   analyticsData: any[];
+  timeframe: 'weekly' | 'monthly';
   setTenantId: (id: number | null) => void;
   setCurrentUser: (user: any | null) => void;
   setCustomMetrics: (metrics: any[]) => void;
@@ -15,6 +16,7 @@ interface WorkspaceState {
   setTaskVelocityMonthly: (data: { label: string; current: number; previous: number }[]) => void;
   setTaskVelocityWeekly: (data: { label: string; current: number; previous: number }[]) => void;
   addAnalyticsData: (data: any) => void;
+  setTimeframe: (timeframe: 'weekly' | 'monthly') => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>()(
@@ -42,6 +44,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         { label: 'Sat', current: 10, previous: 8 },
         { label: 'Sun', current: 8, previous: 12 },
       ],
+      timeframe: 'monthly',
       setTenantId: (id) => set({ currentTenantId: id }),
       setCurrentUser: (user) => set({ currentUser: user }),
       setCustomMetrics: (metrics) => set({ customMetrics: metrics }),
@@ -53,6 +56,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       addAnalyticsData: (data) => set((state) => ({
         analyticsData: [...state.analyticsData, data]
       })),
+      setTimeframe: (timeframe) => set({ timeframe }),
     }),
     {
       name: 'workspace-storage',

@@ -5,7 +5,9 @@ import crypto from "crypto";
 import path from "path";
 import multer from "multer";
 import fs from "fs";
-const __dirname = path.resolve();
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const db = new Database("grahamly.db");
 

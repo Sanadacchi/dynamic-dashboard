@@ -48,9 +48,15 @@ const safeParse = (val: any): any => {
 
 export const Overview = () => {
   const navigate = useNavigate();
-  const { currentTenantId: tenantId, currentUser, setCurrentUser, setTenantId } = useWorkspaceStore();
+  const { 
+    currentTenantId: tenantId, 
+    currentUser, 
+    setCurrentUser, 
+    setTenantId,
+    timeframe,
+    setTimeframe
+  } = useWorkspaceStore();
   const queryClient = useQueryClient();
-  const [timeframe, setTimeframe] = useState<Timeframe>('monthly');
   const [isTimeframeOpen, setIsTimeframeOpen] = useState(false);
 
   const taskVelocityData = useWidgetData({ sourceType: 'MANUAL', manualDataKey: 'taskVelocity' });
