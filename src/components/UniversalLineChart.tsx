@@ -12,9 +12,25 @@ interface Props {
   xAxisKey: string;
   lines: LineConfig[];
   height?: number | string;
+  isLoading?: boolean;
 }
 
-export const UniversalLineChart = ({ data, xAxisKey, lines, height = "100%" }: Props) => {
+export const UniversalLineChart = ({ data, xAxisKey, lines, height = "100%", isLoading }: Props) => {
+  if (isLoading) {
+    return (
+      <div style={{ width: '100%', height }} className="flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <div style={{ width: '100%', height }} className="flex items-center justify-center text-zinc-500 text-xs italic">
+        No data available for this period
+      </div>
+    );
+  }
   return (
     <div style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">

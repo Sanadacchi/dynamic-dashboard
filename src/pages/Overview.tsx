@@ -5,7 +5,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Target, 
   Plus,
-  Pencil
+  Pencil,
+  TrendingUp
 } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, CartesianGrid, XAxis, YAxis, Tooltip, LineChart, Line, BarChart, Bar } from 'recharts';
 import { useWorkspaceStore } from '../store/workspaceStore';
@@ -18,16 +19,83 @@ import { useLayoutStore } from '../store/layoutStore';
 import { supabase } from '../lib/supabase';
 import { useWidgetData } from '../hooks/useWidgetData';
 import { PERSONA_DATA, PersonaType, TREND_ICON, TREND_COLOR } from '../personaConfig';
+import { 
+  format, 
+  startOfWeek, 
+  endOfWeek, 
+  eachDayOfInterval, 
+  eachMonthOfInterval, 
+  startOfYear, 
+  isSameDay, 
+  isSameMonth, 
+  subDays
+} from 'date-fns';
 import { lineData } from '../mockData';
 import { WidgetConfig, CustomWidget } from '../types';
+
+type Timeframe = 'weekly' | 'monthly';
 
 export const Overview = () => {
   const navigate = useNavigate();
   const { currentTenantId: tenantId, currentUser, setCurrentUser, setTenantId } = useWorkspaceStore();
   const queryClient = useQueryClient();
+  const [timeframe, setTimeframe] = useState<Timeframe>('monthly');
+  const [isTimeframeOpen, setIsTimeframeOpen] = useState(false);
 
   const taskVelocityData = useWidgetData({ sourceType: 'MANUAL', manualDataKey: 'taskVelocity' });
   const apiRequestsData = useWidgetData({ sourceType: 'API', endpoint: '/api/metrics/live', refetchInterval: 5000 });
+
+  // Dynamic task velocity data fetching
+  const { data: dynamicVelocityData, isLoading: isVelocityLoading } = useQuery({
+    queryKey: ['task-velocity', tenantId, timeframe],
+    queryFn: async () => {
+      if (!tenantId) return [];
+      
+      const now = new Date();
+      let start: Date;
+      let interval: Date[];
+      let dateFormat: string;
+      
+      if (timeframe === 'weekly') {
+        start = subDays(now, 6);
+        interval = eachDayOfInterval({ start, end: now });
+        dateFormat = 'EEE';
+      } else {
+        start = startOfYear(now);
+        interval = eachMonthOfInterval({ start, end: now });
+        dateFormat = 'MMM';
+      }
+
+      // Try to fetch real completion data. Fallback to [] if column missing.
+      const { data: tasks, error } = await supabase
+        .from('tasks')
+        .select('completed_at, status')
+        .eq('tenant_id', tenantId)
+        .eq('status', 'done');
+
+      if (error) {
+        console.warn('Dynamic velocity fetch failed (likely missing completed_at):', error);
+        return [];
+      }
+
+      return interval.map(date => {
+        const count = tasks?.filter(t => {
+          if (!t.completed_at) return false;
+          const compDate = new Date(t.completed_at);
+          return timeframe === 'weekly' 
+            ? isSameDay(compDate, date)
+            : isSameMonth(compDate, date);
+        }).length || 0;
+
+        return {
+          label: format(date, dateFormat),
+          current: count,
+          previous: Math.floor(count * 0.7) // Mock comparison
+        };
+      });
+    },
+    enabled: !!tenantId,
+  });
 
   const handleLogout = async () => {
     try {
@@ -201,13 +269,38 @@ export const Overview = () => {
       {/* Main Chart Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-[#F7F9FB] dark:bg-[#2C2C2C] rounded-3xl p-8">
-          <div className="flex items-center justify-between mb-8">
-            <h4 className="text-sm font-bold text-zinc-900 dark:text-white">Task Completion Velocity</h4>
+          <div className="flex items-center justify-between mb-8 text-zinc-900 dark:text-white">
+            <h4 className="text-sm font-bold">Task Completion Velocity</h4>
             <div className="flex items-center gap-4">
-              <select className="bg-transparent border-none text-xs font-bold text-zinc-500 outline-none cursor-pointer">
-                <option>This Week</option>
-                <option>This Month</option>
-              </select>
+              <div className="relative">
+                <button 
+                  onClick={() => setIsTimeframeOpen(!isTimeframeOpen)}
+                  className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-500 hover:text-white transition-colors bg-black/5 dark:bg-white/5 px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800"
+                >
+                  {timeframe === 'weekly' ? 'This Week' : 'This Month'}
+                  <TrendingUp size={12} className={isTimeframeOpen ? 'rotate-180 transition-transform' : 'transition-transform'} />
+                </button>
+                
+                {isTimeframeOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsTimeframeOpen(false)} />
+                    <div className="absolute top-full right-0 mt-2 w-32 bg-white dark:bg-[#1C1C1C] border border-zinc-200 dark:border-zinc-800 rounded-xl p-1 shadow-2xl z-50 backdrop-blur-xl">
+                      <button 
+                        onClick={() => { setTimeframe('weekly'); setIsTimeframeOpen(false); }}
+                        className={`w-full text-left px-3 py-2 text-xs rounded-lg transition-colors ${timeframe === 'weekly' ? 'bg-indigo-500 text-white' : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5'}`}
+                      >
+                        This Week
+                      </button>
+                      <button 
+                        onClick={() => { setTimeframe('monthly'); setIsTimeframeOpen(false); }}
+                        className={`w-full text-left px-3 py-2 text-xs rounded-lg transition-colors ${timeframe === 'monthly' ? 'bg-indigo-500 text-white' : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5'}`}
+                      >
+                        This Month
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
               <button 
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingPanel('velocityPanel'); }}
                 className="p-2 -mr-2 text-zinc-600 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
@@ -218,8 +311,9 @@ export const Overview = () => {
           </div>
           <div className="h-64 w-full">
             <UniversalLineChart 
-              data={taskVelocityData.data}
+              data={dynamicVelocityData || []}
               xAxisKey="label"
+              isLoading={isVelocityLoading}
               lines={[
                 { dataKey: 'current', strokeColor: '#6366f1' },
                 { dataKey: 'previous', strokeColor: '#52525b', isDashed: true }

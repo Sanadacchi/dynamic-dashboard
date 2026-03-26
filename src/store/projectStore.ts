@@ -31,8 +31,9 @@ export interface Task {
   assigneeId: number | null;
   assigneeName: string | null;
   comments: Comment[];
-  activity: ActivityEntry[];
+  activity: any[]; // Changed from ActivityEntry[] to any[] for flexibility if needed, or keeping it as is. Actually I saw ActivityEntry interface above.
   createdAt: string;
+  completedAt?: string;
 }
 
 export interface Project {
@@ -201,7 +202,11 @@ export const useProjectStore = create<ProjectState>()(
 
         const { error } = await supabase
           .from('tasks')
-          .update({ status: newStatus, activity: newActivity })
+          .update({ 
+            status: newStatus, 
+            activity: newActivity,
+            completed_at: newStatus === 'done' ? new Date().toISOString() : null 
+          })
           .eq('id', taskId);
 
         if (error) {
