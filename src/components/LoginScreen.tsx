@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
-import { Zap, ChevronRight, Check, Pencil, Search, Users } from 'lucide-react';
+import { Zap, ChevronRight, Check, Pencil, Search, Users, Book } from 'lucide-react';
 import { PERSONA_DATA, PersonaType } from '../personaConfig';
 import { supabase } from '../lib/supabase';
 
@@ -363,6 +363,22 @@ export const LoginScreen = ({ onLogin }: { onLogin: (tenantId: number, userId: n
           </div>
         )}
       </div>
+
+      {/* Floating User Guide Link */}
+      <a 
+        href="/Dashboard-userguide.pdf" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="fixed bottom-8 left-8 flex items-center gap-2.5 px-4 py-2.5 bg-white/5 border border-zinc-800 hover:border-zinc-600 backdrop-blur-md rounded-2xl text-zinc-400 hover:text-white transition-all group z-[100]"
+      >
+        <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+          <Book size={16} />
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 group-hover:text-zinc-300">Resources</span>
+          <span className="text-xs font-bold">User Guide</span>
+        </div>
+      </a>
     </div>
   );
 };
