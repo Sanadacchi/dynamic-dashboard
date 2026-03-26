@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Sun, Moon, History, Bell, Sidebar as SidebarIcon, Menu, X, FileText, TrendingUp, Users, MessageSquare } from 'lucide-react';
+import { Search, Sun, Moon, History, Bell, Sidebar as SidebarIcon, Menu, X, FileText, TrendingUp, Users, MessageSquare, Briefcase } from 'lucide-react';
 import { NavLink, useParams } from 'react-router-dom';
 import { CountdownTimer } from './CountdownTimer';
 import { useNotificationStore } from '../store/notificationStore';
@@ -38,6 +38,9 @@ export const TopNavbar = ({ onOpenNotificationCenter }: { onOpenNotificationCent
           <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6 text-center">Navigation</h2>
           
           <div className="flex flex-col gap-4 w-full max-w-xs mx-auto pb-10">
+            <NavLink to={`/space/${tenantId}/projects`} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-4 text-lg font-medium text-zinc-400 hover:text-white transition-colors bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800">
+              <Briefcase className="text-yellow-500" /> Projects
+            </NavLink>
             <NavLink to={`/space/${tenantId}/analytics`} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-4 text-lg font-medium text-zinc-400 hover:text-white transition-colors bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800">
               <TrendingUp className="text-indigo-500" /> Analytics
             </NavLink>

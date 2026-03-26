@@ -6,6 +6,7 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
+  TouchSensor,
   useSensor,
   useSensors,
   PointerSensor,
@@ -70,7 +71,7 @@ const TaskCard: React.FC<{ task: Task; onClick: () => void }> = ({ task, onClick
           {...listeners}
           {...attributes}
           onClick={e => e.stopPropagation()}
-          className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-zinc-600 dark:hover:text-white cursor-grab active:cursor-grabbing shrink-0 mt-0.5 transition-opacity"
+          className="md:opacity-0 md:group-hover:opacity-100 text-zinc-400 hover:text-zinc-600 dark:hover:text-white cursor-grab active:cursor-grabbing shrink-0 mt-0.5 transition-opacity touch-none"
         >
           <GripVertical size={14} />
         </button>
@@ -193,7 +194,15 @@ export const ProjectBoard = () => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { 
+      activationConstraint: { 
+        delay: 250, 
+        tolerance: 5 
+      } 
+    })
+  );
 
   const handleDragStart = (e: DragStartEvent) => setActiveId(e.active.id as string);
 

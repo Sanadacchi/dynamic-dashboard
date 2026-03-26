@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, useParams, NavLink, useLocation } from 'react-router-dom';
-import { Target, Bell, Settings, UserCircle, LayoutDashboard } from 'lucide-react';
+import { Target, Bell, Settings, UserCircle, LayoutDashboard, Briefcase } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
 import { TopNavbar } from '../components/TopNavbar';
 import { RightSidebar } from '../components/RightSidebar';
@@ -88,6 +88,9 @@ export const DashboardLayout = () => {
         </NavLink>
         <NavLink to={`/space/${tenantId}/north-star`} className={({ isActive }) => `flex flex-col items-center gap-1 transition-colors ${isActive ? 'text-white' : 'text-zinc-500 hover:text-white'}`}>
           <Target size={22} />
+        </NavLink>
+        <NavLink to={`/space/${tenantId}/projects`} className={({ isActive }) => `flex flex-col items-center gap-1 transition-colors ${isActive ? 'text-white' : 'text-zinc-500 hover:text-white'}`}>
+          <Briefcase size={22} className={location.pathname.includes('/projects') ? 'text-yellow-500 drop-shadow-md' : ''} />
         </NavLink>
         <button onClick={() => setIsNotificationCenterOpen(true)} className="flex flex-col items-center gap-1 text-zinc-500 hover:text-white transition-colors relative">
           <Bell size={22} />
