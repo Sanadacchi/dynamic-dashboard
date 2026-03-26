@@ -35,6 +35,17 @@ import { WidgetConfig, CustomWidget } from '../types';
 
 type Timeframe = 'weekly' | 'monthly';
 
+const safeParse = (val: any): any => {
+  if (typeof val !== 'string') return val;
+  try {
+    const parsed = JSON.parse(val);
+    if (typeof parsed === 'string') return safeParse(parsed);
+    return parsed;
+  } catch {
+    return val;
+  }
+};
+
 export const Overview = () => {
   const navigate = useNavigate();
   const { currentTenantId: tenantId, currentUser, setCurrentUser, setTenantId } = useWorkspaceStore();
@@ -102,8 +113,8 @@ export const Overview = () => {
       const allBlockers = blockersRes.data || [];
       
       return {
-        activeTasks: allTasks.filter(t => t.status !== 'Done').length,
-        completedTasks: allTasks.filter(t => t.status === 'Done').length,
+        activeTasks: allTasks.filter(t => t.status !== 'done').length,
+        completedTasks: allTasks.filter(t => t.status === 'done').length,
         totalBlockers: allBlockers.length,
         escalatedBlockers: allBlockers.filter(b => b.is_escalated).length
       };
@@ -139,7 +150,7 @@ export const Overview = () => {
 
   if (isLoading) return <div className="p-8">Loading dashboard...</div>;
 
-  const layout: WidgetConfig[] = data?.tenant?.dashboard_layout ? JSON.parse(data.tenant.dashboard_layout) : [];
+  const layout: WidgetConfig[] = safeParse(data?.tenant?.dashboard_layout) || [];
   const runwayDays = data?.tenant ? Math.floor(data.tenant.total_balance / data.tenant.daily_burn) : 0;
   const companyType = data?.tenant?.company_type || '';
   const personaKey = Object.keys(PERSONA_DATA).find(k =>
@@ -147,7 +158,7 @@ export const Overview = () => {
   ) as keyof typeof PERSONA_DATA | undefined;
   const persona = personaKey ? PERSONA_DATA[personaKey] : PERSONA_DATA['Tech'];
 
-  const overrides = data?.tenant?.custom_labels || {};
+  const overrides = safeParse(data?.tenant?.custom_labels) || {};
   const sidePanel = overrides.sidePanel ? { ...persona.sidePanel, ...overrides.sidePanel } : persona.sidePanel;
   const chartPanelLabel = overrides.chartPanel?.title ?? persona.chartLabel;
   const statusStat1 = overrides.statusPanel?.stats?.[0] ?? { label: persona.stat1.label, value: persona.stat1.value, sub: persona.stat1.sub };

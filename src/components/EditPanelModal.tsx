@@ -38,6 +38,17 @@ const TREND_OPTIONS: { value: TrendType; icon: React.ReactNode; label: string }[
   { value: 'down', icon: <TrendingDown size={12} />, label: 'Down' },
 ];
 
+const safeParse = (val: any): any => {
+  if (typeof val !== 'string') return val;
+  try {
+    const parsed = JSON.parse(val);
+    if (typeof parsed === 'string') return safeParse(parsed);
+    return parsed;
+  } catch {
+    return val;
+  }
+};
+
 export const EditPanelModal = ({
   panelType, tenantId, initialTitle, initialItems, initialStats, initialChartLabel, timeframe = 'monthly', onClose
 }: EditPanelModalProps) => {
@@ -92,7 +103,7 @@ export const EditPanelModal = ({
       
       if (fetchError) throw fetchError;
       
-      const existing = tenant?.custom_labels ? (typeof tenant.custom_labels === 'string' ? JSON.parse(tenant.custom_labels) : tenant.custom_labels) : {};
+      const existing = safeParse(tenant?.custom_labels) || {};
       const merged = { ...existing, ...payload };
       
       const { error: updateError } = await supabase
