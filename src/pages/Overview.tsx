@@ -289,19 +289,12 @@ export const Overview = () => {
           <div className="flex flex-col gap-5 flex-1 justify-center">
             {sidePanel.items.map((item: any, i: number) => {
               const TrendIconComp = TREND_ICON[item.trend as keyof typeof TREND_ICON];
-              // Map dynamic numbers from real engine feed
-              const valueMap: Record<number, number> = {
-                0: stats?.activeTasks ?? 0,
-                1: stats?.completedTasks ?? 0,
-                2: stats?.totalBlockers ?? 0
-              };
-              const dynamicValue = valueMap[i] ?? 0;
               
               return (
                 <div key={i} className="flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{item.label}</p>
-                    <p className="text-lg font-bold text-zinc-900 dark:text-white mt-0.5">{dynamicValue}</p>
+                    <p className="text-lg font-bold text-zinc-900 dark:text-white mt-0.5">{item.value}</p>
                   </div>
                   <div className={`flex items-center gap-1.5 text-[10px] font-bold ${TREND_COLOR[item.trend as keyof typeof TREND_COLOR]}`}>
                     <TrendIconComp size={13} />
@@ -363,18 +356,13 @@ export const Overview = () => {
           <div className="space-y-6 flex-1">
             {[{ stat: statusStat1, iconData: persona.stat1 }, { stat: statusStat2, iconData: persona.stat2 }].map(({ stat, iconData }, i) => {
               const StatIcon = iconData.icon;
-              const valueMap: Record<number, number> = {
-                0: stats?.totalBlockers ?? 0,
-                1: stats?.escalatedBlockers ?? 0
-              };
-              const dynamicValue = valueMap[i] ?? 0;
               return (
                 <div key={i} className="flex items-center gap-4">
                   <div className={`w-10 h-10 ${iconData.iconBg} rounded-xl flex items-center justify-center ${iconData.iconColor}`}>
                     <StatIcon size={20} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-zinc-900 dark:text-white">{dynamicValue} — {stat.label}</p>
+                    <p className="text-xs font-bold text-zinc-900 dark:text-white">{stat.value} — {stat.label}</p>
                     <p className="text-[10px] text-zinc-500">{stat.sub}</p>
                   </div>
                 </div>

@@ -55,8 +55,8 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 - **Mobile Usability Overhaul**: Fully refactored the navigation for mobile devices. Added the "Projects" module to both the bottom navigation bar and the hamburger menu.
 - **Touch-Optimized Kanban**: Integrated `TouchSensor` with a 250ms hold-to-drag delay and implemented permanently visible drag handles for mobile, ensuring the project board is fully functional on touch devices.
 
-- **Manual Task Velocity Correction**: Reverted the dynamic Supabase query to restore manual data control. Implemented a functional Weekly/Monthly toggle that switches between manual data sets in the `workspaceStore`.
-- **Enhanced Modal Editing**: Updated the `EditPanelModal` to contextually edit either Weekly (daily) or Monthly values depending on the active view.
+- **Manual Panel Persistence**: Disconnected the "Build Status" (Side Panel) and "Status Snapshot" cards from dynamic task counts. They now display and store purely manual labels and values in Supabase.
+- **Enhanced Modal Logic**: Verified that `EditPanelModal` correctly saves and retrieves localized manual entries for all overview cards.
 
 ---
-*Updated by Solace (Team Lead) on 2026-03-26. Manual Task Velocity toggle and mobile navigation are fully functional and live.*
+*Updated by Solace (Team Lead) on 2026-03-26. Manual Task Velocity toggle, Mobile Navigation, and Manual Side Panels are fully functional and live.*
