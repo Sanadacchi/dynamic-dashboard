@@ -45,57 +45,8 @@ export const Overview = () => {
   const taskVelocityData = useWidgetData({ sourceType: 'MANUAL', manualDataKey: 'taskVelocity' });
   const apiRequestsData = useWidgetData({ sourceType: 'API', endpoint: '/api/metrics/live', refetchInterval: 5000 });
 
-  // Dynamic task velocity data fetching
-  const { data: dynamicVelocityData, isLoading: isVelocityLoading } = useQuery({
-    queryKey: ['task-velocity', tenantId, timeframe],
-    queryFn: async () => {
-      if (!tenantId) return [];
-      
-      const now = new Date();
-      let start: Date;
-      let interval: Date[];
-      let dateFormat: string;
-      
-      if (timeframe === 'weekly') {
-        start = subDays(now, 6);
-        interval = eachDayOfInterval({ start, end: now });
-        dateFormat = 'EEE';
-      } else {
-        start = startOfYear(now);
-        interval = eachMonthOfInterval({ start, end: now });
-        dateFormat = 'MMM';
-      }
-
-      // Try to fetch real completion data. Fallback to [] if column missing.
-      const { data: tasks, error } = await supabase
-        .from('tasks')
-        .select('completed_at, status')
-        .eq('tenant_id', tenantId)
-        .eq('status', 'done');
-
-      if (error) {
-        console.warn('Dynamic velocity fetch failed (likely missing completed_at):', error);
-        return [];
-      }
-
-      return interval.map(date => {
-        const count = tasks?.filter(t => {
-          if (!t.completed_at) return false;
-          const compDate = new Date(t.completed_at);
-          return timeframe === 'weekly' 
-            ? isSameDay(compDate, date)
-            : isSameMonth(compDate, date);
-        }).length || 0;
-
-        return {
-          label: format(date, dateFormat),
-          current: count,
-          previous: Math.floor(count * 0.7) // Mock comparison
-        };
-      });
-    },
-    enabled: !!tenantId,
-  });
+  const { taskVelocityMonthly, taskVelocityWeekly } = useWorkspaceStore();
+  const currentVelocityData = timeframe === 'weekly' ? taskVelocityWeekly : taskVelocityMonthly;
 
   const handleLogout = async () => {
     try {
@@ -311,9 +262,8 @@ export const Overview = () => {
           </div>
           <div className="h-64 w-full">
             <UniversalLineChart 
-              data={dynamicVelocityData || []}
+              data={currentVelocityData}
               xAxisKey="label"
-              isLoading={isVelocityLoading}
               lines={[
                 { dataKey: 'current', strokeColor: '#6366f1' },
                 { dataKey: 'previous', strokeColor: '#52525b', isDashed: true }
@@ -463,6 +413,7 @@ export const Overview = () => {
           tenantId={tenantId!}
           initialTitle={editingPanel === 'sidePanel' ? sidePanel.title : editingPanel === 'chartPanel' ? chartPanelLabel : editingPanel === 'velocityPanel' ? 'Task Completion Velocity' : statusPanelTitle}
           onClose={() => setEditingPanel(null)}
+          timeframe={timeframe}
           {...(editingPanel === 'sidePanel' ? { initialItems: sidePanel.items } : {})}
           {...(editingPanel === 'chartPanel' ? { initialChartLabel: chartPanelLabel } : {})}
           {...(editingPanel === 'statusPanel' ? { initialStats: [statusStat1, statusStat2] } : {})}

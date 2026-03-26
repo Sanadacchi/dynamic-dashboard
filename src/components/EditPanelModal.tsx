@@ -28,6 +28,7 @@ interface EditPanelModalProps {
   initialItems?: SideItem[];   // sidePanel — 3 items
   initialStats?: StatItem[];   // statusPanel — 2 stats
   initialChartLabel?: string;  // chartPanel
+  timeframe?: 'weekly' | 'monthly';
   onClose: () => void;
 }
 
@@ -38,16 +39,24 @@ const TREND_OPTIONS: { value: TrendType; icon: React.ReactNode; label: string }[
 ];
 
 export const EditPanelModal = ({
-  panelType, tenantId, initialTitle, initialItems, initialStats, initialChartLabel, onClose
+  panelType, tenantId, initialTitle, initialItems, initialStats, initialChartLabel, timeframe = 'monthly', onClose
 }: EditPanelModalProps) => {
   const queryClient = useQueryClient();
 
-  const { taskVelocityData, setTaskVelocityData } = useWorkspaceStore();
+  const { 
+    taskVelocityMonthly, 
+    setTaskVelocityMonthly,
+    taskVelocityWeekly,
+    setTaskVelocityWeekly
+  } = useWorkspaceStore();
+  
   const [title, setTitle] = useState(initialTitle);
   const [chartLabel, setChartLabel] = useState(initialChartLabel ?? '');
   const [items, setItems] = useState<SideItem[]>(initialItems ?? []);
   const [stats, setStats] = useState<StatItem[]>(initialStats ?? []);
-  const [localVelocityData, setLocalVelocityData] = useState(taskVelocityData);
+  
+  const initialVelocity = timeframe === 'weekly' ? taskVelocityWeekly : taskVelocityMonthly;
+  const [localVelocityData, setLocalVelocityData] = useState(initialVelocity);
 
   const updateVelocity = (i: number, field: 'current' | 'previous', val: string) => {
     setLocalVelocityData(prev => prev.map((v, idx) => idx === i ? { ...v, [field]: Number(val) } : v));
@@ -62,7 +71,11 @@ export const EditPanelModal = ({
   const save = useMutation({
     mutationFn: async () => {
       if (panelType === 'velocityPanel') {
-        setTaskVelocityData(localVelocityData);
+        if (timeframe === 'weekly') {
+          setTaskVelocityWeekly(localVelocityData);
+        } else {
+          setTaskVelocityMonthly(localVelocityData);
+        }
         return { success: true };
       }
 
