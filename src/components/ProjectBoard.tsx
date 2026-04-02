@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   DndContext,
-  closestCenter,
+  pointerWithin,
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
@@ -198,8 +198,8 @@ export const ProjectBoard = () => {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { 
       activationConstraint: { 
-        delay: 250, 
-        tolerance: 5 
+        delay: 150, 
+        tolerance: 10 
       } 
     })
   );
@@ -209,14 +209,20 @@ export const ProjectBoard = () => {
   const handleDragEnd = (e: DragEndEvent) => {
     setActiveId(null);
     const { active, over } = e;
-    if (!over || active.id === over.id) return;
+    if (!over) return;
 
-    // Determine which column was dropped into
-    const overColumnId = vocab.columns.find(c => c.id === over.id)?.id
+    // Use current task's status as a fallback if over.id is neither a column nor a task
+    const activeTask = tasks.find(t => t.id === active.id);
+    if (!activeTask) return;
+
+    let overColumnId = vocab.columns.find(c => c.id === over.id)?.id
       ?? tasks.find(t => t.id === over.id)?.status;
 
-    if (overColumnId && overColumnId !== tasks.find(t => t.id === active.id)?.status) {
-      moveTask(active.id as string, overColumnId as TaskStatus, currentUser?.name ?? 'Someone');
+    // Additional check: if over.id is the SortableContext or something else, 
+    // it might still be inside a column. But dnd-kit usually provides the droppable ID.
+    
+    if (overColumnId && overColumnId !== activeTask.status) {
+      moveTask(active.id as string, overColumnId as TaskStatus, currentUser?.name ?? 'Someone', currentUser?.id);
     }
   };
 
@@ -252,9 +258,8 @@ export const ProjectBoard = () => {
         </div>
       </div>
 
-      {/* Kanban Board */}
       <div className="flex-1 overflow-x-auto pb-4">
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="flex gap-4 min-w-max">
             {vocab.columns.map(col => (
               <KanbanColumn
