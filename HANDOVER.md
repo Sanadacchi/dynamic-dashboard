@@ -41,10 +41,15 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 
 ## 🚀 Recent Accomplishments
 - **Dashboard Data Fixes**: Resolved bugs in `useWidgetData.ts` affecting Supabase count retrieval and time label calculations for live charts.
+- **TypeScript Store Fixes**: Added `taskVelocityData` and synchronized state updates to the Zustand workspace store, resolving compilation errors across multiple components.
+- **Kanban Board Reliability**: Enhanced the `ProjectBoard` drag-and-drop feature by adopting pointer-based collision detection and optimizing touch sensor constraints, ensuring seamless transitions across mobile and desktop.
+- **Edge Function & TypeScript Harmony**: Excluded Deno-based Supabase functions from the main `tsconfig.json` and added `@ts-nocheck` to silence environment-specific compiler errors.
+- **Schema Completion**: Patched `setup_supabase.sql` to explicitly include the `completed_at` timestamp in the `tasks` table, fixing a schema cache error when moving tasks to "Done".
+- **Sidebar Cleanup**: Stripped the right-pointing chevron arrows from the `Sidebar` items for a cleaner, label-centric aesthetic.
 - **OneSignal Restoration**: Successfully debugged and restored the push notification system, including service worker registration and edge function payload mapping.
 - **Total Synchronization**: Connected every dashboard card, persona panel, and War Room feed to live Supabase data.
 - **EOD & North Star Fixes**: Resolved critical schema mismatches (missing `date` and `north_star_chart_data` columns) via SQL migration.
-- **Mobile Documents UI Refactor**: Successfully refactored the `Documents` page to use a responsive card-based layout on mobile devices. This fixed an issue where action buttons (download/delete) were hidden due to lack of space and reliance on hover states.
+- **Mobile Documents UI Refactor**: Successfully refactored the `Documents` page to use a responsive card-based layout on mobile devices.
 - **Mobile Polish**: Added the theme toggle to the mobile menu for full accessibility.
 - **Edge Function Modernization**: Migrated the `send-notification` function to use `Deno.serve` and restructured it to `supabase/functions/send-notification/index.ts`. Optimized for OneSignal's newest subscription API.
 - **ESM & Windows Fixes**: Resolved the `ERR_INVALID_URL_SCHEME` in `server.ts` by correctly defining `__dirname` for ESM on Windows.
@@ -63,4 +68,4 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 - **Enhanced Modal Logic**: Verified that `EditPanelModal` correctly saves and retrieves localized manual entries for all overview cards.
 
 ---
-*Updated by Solace (Team Lead) on 2026-03-26. Edge Function modernized, ESM fixes applied, Sticky Timeframe implemented, and User Guide integrated via Supabase Storage.*
+*Updated by Solace (Team Lead) on 2026-04-02. TypeScript Stores patched, Deno compiler silenced, Kanban drag-and-drop stabilized on all platforms, and Sidebar aesthetically refined.*
