@@ -54,7 +54,8 @@ CREATE TABLE IF NOT EXISTS public.tasks (
     assignee_name TEXT,
     comments JSONB DEFAULT '[]',
     activity JSONB DEFAULT '[]-Task created',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    completed_at TIMESTAMP WITH TIME ZONE
 );
 
 CREATE TABLE IF NOT EXISTS public.documents (
