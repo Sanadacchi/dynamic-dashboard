@@ -55,8 +55,10 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 - **ESM & Windows Fixes**: Resolved the `ERR_INVALID_URL_SCHEME` in `server.ts` by correctly defining `__dirname` for ESM on Windows.
 - **Sticky Timeframe**: Persisted the Task Velocity timeframe (Weekly/Monthly) in the `workspaceStore` to ensure it remains active after a page refresh.
 - **User Guide Integration**: Added a floating, glassmorphic "User Guide" link to the login screen. Transitions from a local asset to a permanent **Supabase Storage** URL for reliable global access on the live site.
+- **Document Organization (Fixed)**: Restored drag-and-drop functionality by consolidating DndContext and added a manual "Move to Folder" modal for improved accessibility.
 
 ## 🔮 Future Roadmap (Next Steps)
+- **Document Management Enhancement**: Added folder support, search functionality, and drag-and-drop organization for files.
 - **RLS Enablement**: Enable Supabase Row Level Security once user authentication (Auth) is fully integrated.
 - **Document Migration**: Migrate to Cloudflare R2 (10GB Free) once Supabase Storage limits are reached. See `document_migration_plan.md`.
 - **Task Analytics**: The `completed_at` column in `tasks` is ready for advanced velocity chart implementation.
@@ -69,4 +71,4 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 - **Enhanced Modal Logic**: Verified that `EditPanelModal` correctly saves and retrieves localized manual entries for all overview cards.
 
 ---
-*Updated by Solace (Team Lead) on 2026-04-02. TypeScript Stores patched, Deno compiler silenced, Kanban drag-and-drop stabilized on all platforms, and Sidebar aesthetically refined.*
+*Updated by Antigravity on 2026-04-09. Document Move functionality (Drag-and-Drop + Manual Modal) implemented. DndContext consolidated across the Documents page. Logged for Sentinel.*

@@ -14,7 +14,9 @@ import {
   FileBarChart,
   Folder,
   ChevronRight,
-  GripVertical
+  GripVertical,
+  FolderInput,
+  X
 } from 'lucide-react';
 import {
   DndContext,
@@ -68,6 +70,8 @@ export const Documents = () => {
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [movingFile, setMovingFile] = useState<FileItem | null>(null);
+  const [activeFile, setActiveFile] = useState<FileItem | null>(null);
 
   const { data: folders = [], isLoading: loadingFolders } = useQuery<FolderItem[]>({
     queryKey: ['folders', currentTenantId],
@@ -141,8 +145,15 @@ export const Documents = () => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  const handleDragStart = (event: any) => {
+    const { active } = event;
+    const file = files.find(f => f.id === active.id);
+    if (file) setActiveFile(file);
+  };
+
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
+    setActiveFile(null);
     if (!over) return;
 
     if (active.id !== over.id) {
@@ -198,6 +209,13 @@ export const Documents = () => {
             <a href={file.url} download={file.name} className="p-2 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-white transition-colors">
               <Download size={16} />
             </a>
+            <button 
+              onClick={() => setMovingFile(file)}
+              className="p-2 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-indigo-400 transition-colors"
+              title="Move to folder"
+            >
+              <FolderInput size={16} />
+            </button>
             {file.uploaded_by == currentUser?.id && (
               <button 
                 onClick={() => { if(window.confirm('Delete this document?')) deleteDocument.mutate(file); }}
@@ -278,6 +296,13 @@ export const Documents = () => {
             <a href={file.url} download={file.name} className="p-2 bg-white/5 rounded-lg text-zinc-400 hover:text-white">
               <Download size={18} />
             </a>
+            <button 
+              onClick={() => setMovingFile(file)}
+              className="p-2 bg-white/5 rounded-lg text-zinc-400 hover:text-indigo-400"
+              title="Move to folder"
+            >
+              <FolderInput size={18} />
+            </button>
             {file.uploaded_by == currentUser?.id && (
               <button 
                 onClick={() => { if(window.confirm('Delete this document?')) deleteDocument.mutate(file); }}
@@ -397,7 +422,13 @@ export const Documents = () => {
   };
 
   return (
-    <div className="p-8 space-y-8">
+    <DndContext 
+      sensors={sensors} 
+      collisionDetection={closestCenter} 
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="p-8 space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold">
@@ -467,13 +498,11 @@ export const Documents = () => {
       {/* Folders Grid (Only show if not in a folder) */}
       {!selectedFolderId && filteredFolders.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <DndContext onDragEnd={handleDragEnd}>
-            {filteredFolders.map(folder => (
-              <div key={folder.id} onClick={() => setSelectedFolderId(folder.id)}>
-                <DroppableFolder folder={folder} />
-              </div>
-            ))}
-          </DndContext>
+          {filteredFolders.map(folder => (
+            <div key={folder.id} onClick={() => setSelectedFolderId(folder.id)}>
+              <DroppableFolder folder={folder} />
+            </div>
+          ))}
         </div>
       )}
 
@@ -525,17 +554,15 @@ export const Documents = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/50">
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                {filteredFiles.filter(f => f.folder_id === selectedFolderId).map((file: any) => (
-                  <DraggableFileRow 
-                    key={file.id} 
-                    file={file} 
-                    currentUser={currentUser} 
-                    deleteDocument={deleteDocument} 
-                    getFileIcon={getFileIcon} 
-                  />
-                ))}
-              </DndContext>
+              {filteredFiles.filter(f => f.folder_id === selectedFolderId).map((file: any) => (
+                <DraggableFileRow 
+                  key={file.id} 
+                  file={file} 
+                  currentUser={currentUser} 
+                  deleteDocument={deleteDocument} 
+                  getFileIcon={getFileIcon} 
+                />
+              ))}
               {filteredFiles.filter(f => f.folder_id === selectedFolderId).length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-zinc-500 text-xs italic">
@@ -549,17 +576,15 @@ export const Documents = () => {
 
         {/* Mobile List View */}
         <div className="md:hidden divide-y divide-zinc-800/50">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            {filteredFiles.filter(f => f.folder_id === selectedFolderId).map((file: any) => (
-              <DraggableFileCard 
-                key={file.id} 
-                file={file} 
-                currentUser={currentUser} 
-                deleteDocument={deleteDocument} 
-                getFileIcon={getFileIcon} 
-              />
-            ))}
-          </DndContext>
+          {filteredFiles.filter(f => f.folder_id === selectedFolderId).map((file: any) => (
+            <DraggableFileCard 
+              key={file.id} 
+              file={file} 
+              currentUser={currentUser} 
+              deleteDocument={deleteDocument} 
+              getFileIcon={getFileIcon} 
+            />
+          ))}
           {filteredFiles.filter(f => f.folder_id === selectedFolderId).length === 0 && (
             <div className="p-12 text-center text-zinc-500 text-xs italic">
                {selectedFolderId ? "This folder is empty." : "No individual files found."}
@@ -568,5 +593,62 @@ export const Documents = () => {
         </div>
       </div>
     </div>
+
+    {movingFile && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setMovingFile(null)}>
+          <div className="bg-[#1C1C1C] border border-zinc-800 rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
+              <h3 className="font-bold flex items-center gap-2 text-white"><FolderInput size={18} className="text-indigo-400" /> Move to Folder</h3>
+              <button onClick={() => setMovingFile(null)} className="text-zinc-500 hover:text-white transition-colors"><X size={20} /></button>
+            </div>
+            <div className="p-2 max-h-[400px] overflow-y-auto">
+              <button 
+                onClick={() => { moveFileToFolder.mutate({ fileId: movingFile.id, folderId: null }); setMovingFile(null); }}
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors text-left group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-500 group-hover:text-white">
+                  <FileText size={20} />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">Root / Documents</p>
+                  <p className="text-[10px] text-zinc-500">Back to main list</p>
+                </div>
+              </button>
+              {folders.map(folder => (
+                <button 
+                  key={folder.id}
+                  onClick={() => { moveFileToFolder.mutate({ fileId: movingFile.id, folderId: folder.id }); setMovingFile(null); }}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors text-left group ${movingFile.folder_id === folder.id ? 'opacity-50 pointer-events-none' : ''}`}
+                >
+                  <div className="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                    <Folder size={20} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">{folder.name}</p>
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider">
+                      {files.filter(f => f.folder_id === folder.id).length} files
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <DragOverlay>
+        {activeFile ? (
+          <div className="bg-[#1C1C1C] border border-indigo-500/50 p-4 rounded-2xl shadow-2xl flex items-center gap-3 min-w-[300px]">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+              {getFileIcon(activeFile.type)}
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">{activeFile.name}</p>
+              <p className="text-[10px] text-zinc-500 uppercase tracking-widest">DRAGGING TO FOLDER</p>
+            </div>
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 };
