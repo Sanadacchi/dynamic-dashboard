@@ -58,6 +58,7 @@ The Grahamly Dashboard has been fully migrated from LocalStorage to a **Supabase
 
 ## 🔮 Future Roadmap (Next Steps)
 - **RLS Enablement**: Enable Supabase Row Level Security once user authentication (Auth) is fully integrated.
+- **Document Migration**: Migrate to Cloudflare R2 (10GB Free) once Supabase Storage limits are reached. See `document_migration_plan.md`.
 - **Task Analytics**: The `completed_at` column in `tasks` is ready for advanced velocity chart implementation.
 - **Collaboration**: Real-time presence and typing indicators in the War Room.
 

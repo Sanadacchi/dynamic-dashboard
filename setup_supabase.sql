@@ -58,10 +58,18 @@ CREATE TABLE IF NOT EXISTS public.tasks (
     completed_at TIMESTAMP WITH TIME ZONE
 );
 
+CREATE TABLE IF NOT EXISTS public.folders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id BIGINT REFERENCES public.tenants(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS public.documents (
     id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     tenant_id BIGINT, -- REFERENCES public.tenants(id),
     uploaded_by BIGINT REFERENCES public.users(id),
+    folder_id UUID REFERENCES public.folders(id) ON DELETE SET NULL,
     name TEXT NOT NULL,
     type TEXT NOT NULL,
     url TEXT NOT NULL,
@@ -129,6 +137,7 @@ ALTER TABLE public.custom_widgets DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.social_posts DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.blockers DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.eod_reports DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.folders DISABLE ROW LEVEL SECURITY;
 
 -- 4. Enable Storage Policies for the 'documents' bucket
 -- Note: Make sure the 'documents' bucket exists first!
@@ -145,3 +154,4 @@ CREATE POLICY "Public Access" ON storage.objects FOR ALL USING ( bucket_id = 'do
 -- ALTER PUBLICATION supabase_realtime ADD TABLE public.social_posts;
 -- ALTER PUBLICATION supabase_realtime ADD TABLE public.blockers;
 -- ALTER PUBLICATION supabase_realtime ADD TABLE public.eod_reports;
+-- ALTER PUBLICATION supabase_realtime ADD TABLE public.folders;
